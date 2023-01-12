@@ -587,7 +587,7 @@ void CCharacter::Tick()
 
 	//HandleFreeze
 	HandleFreeze();
-
+    ReFNGTick();
 	// handle Weapons
 	HandleWeapons();
 
@@ -623,6 +623,11 @@ void CCharacter::Tick()
 		}
 	}
 	return;
+}
+
+void CCharacter::ReFNGTick()
+{
+    if(Server()->Tick() % 5 == 0 && Server()->IsAuthed(m_pPlayer->GetCID())) GameServer()->CreateDamageInd(m_Pos, Server()->Tick()%180, 1);
 }
 
 void CCharacter::TickDefered()

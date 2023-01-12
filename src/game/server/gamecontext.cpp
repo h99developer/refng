@@ -160,6 +160,25 @@ void CGameContext::CreateDamageInd(vec2 Pos, float Angle, int Amount, int Team, 
 	}
 }
 
+void CGameContext::CreateDamageInd(vec2 Pos, float Angle, int Amount)
+{
+    float a = 3 * 3.14159f / 2 + Angle;
+    //float a = get_angle(dir);
+    float s = a-pi/3;
+    float e = a+pi/3;
+    for(int i = 0; i < Amount; i++)
+    {
+        float f = mix(s, e, float(i+1)/float(Amount+2));
+        CNetEvent_DamageInd *pEvent = (CNetEvent_DamageInd *)m_Events.Create(NETEVENTTYPE_DAMAGEIND, sizeof(CNetEvent_DamageInd));
+        if(pEvent)
+        {
+            pEvent->m_X = (int)Pos.x;
+            pEvent->m_Y = (int)Pos.y;
+            pEvent->m_Angle = (int)(f*256.0f);
+        }
+    }
+}
+
 void CGameContext::CreateSoundTeam(vec2 Pos, int Sound, int TeamID, int FromPlayerID)
 {
 	if (Sound < 0)

@@ -247,7 +247,8 @@ public:
 
 	// helper functions
 	void MakeLaserTextPoints(vec2 pPos, int pOwner, int pPoints);
-	
+
+    void CreateDamageInd(vec2 Pos, float Angle, int Amount);
 	void CreateDamageInd(vec2 Pos, float AngleMod, int Amount, int Team, int FromPlayerID = -1);
 	void CreateSoundTeam(vec2 Pos, int Sound, int TeamID, int FromPlayerID = -1);
 
