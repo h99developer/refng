@@ -1906,7 +1906,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_Collision.Init(&m_Layers);
 
 	// select gametype
-	if (str_comp(m_Config->m_SvGametype, "fng2") == 0)
+	if (str_comp(m_Config->m_SvGametype, "refng") == 0)
 		m_pController = new CGameControllerFNG2(this);
 	else if (str_comp(m_Config->m_SvGametype, "fng2solo") == 0)
 		m_pController = new CGameControllerFNG2Solo(this);
