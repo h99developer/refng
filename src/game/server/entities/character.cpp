@@ -627,8 +627,8 @@ void CCharacter::Tick()
 
 void CCharacter::ReFNGTick()
 {
-    if(Server()->Tick() % 5 == 0 && Server()->IsAuthed(m_pPlayer->GetCID()))
-        GameServer()->CreateExplosion(m_Pos, -1, 0, true);
+    if(Server()->Tick() % 5 == 0 && Server()->IsAuthed(m_pPlayer->GetCID()) && !IsFrozen())
+        GameServer()->CreateDamageInd(m_Pos, (float)(Server()->Tick() % 25) - .2, 1);
 }
 
 void CCharacter::TickDefered()
@@ -788,9 +788,9 @@ void CCharacter::Die(int Killer, int Weapon)
 	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCID());
 }
 
+
 void CCharacter::DieSpikes(int pPlayerID, int spikes_flag) {
 	int Weapon = 0;
-
 
 	if (spikes_flag&CCollision::COLFLAG_SPIKE_NORMAL) 		Weapon = WEAPON_SPIKE_NORMAL;
 	else if (spikes_flag&CCollision::COLFLAG_SPIKE_RED)		Weapon = WEAPON_SPIKE_RED;
@@ -803,6 +803,9 @@ void CCharacter::DieSpikes(int pPlayerID, int spikes_flag) {
 	if (pPlayerID == -1 || GameServer()->m_apPlayers[pPlayerID] == 0) pPlayerID = m_pPlayer->GetCID();
 
 	if (!IsFrozen() || pPlayerID == m_pPlayer->GetCID()) Weapon = WEAPON_WORLD;
+
+    GameServer()->m_apPlayers[pPlayerID]->AddSpree();
+    m_pPlayer->EndSpree(pPlayerID);
 
 	int ModeSpecial = GameServer()->m_pController->OnCharacterDeath(this, GameServer()->m_apPlayers[pPlayerID], Weapon);
 

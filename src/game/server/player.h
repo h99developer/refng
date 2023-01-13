@@ -189,6 +189,13 @@ private:
 	int m_Team;
 	
 	void CalcScore();
+    // refng
+private:
+    int m_Spree;
+public:
+    void AddSpree();
+    void EndSpree(int pKillerID);
+    void ResetSpree() { m_Spree = 0; };
 };
 
 #endif

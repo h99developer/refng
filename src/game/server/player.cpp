@@ -21,6 +21,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_SpectatorID = SPEC_FREEVIEW;
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
+    m_Spree = 0;
 
 	ResetStats();
 
@@ -510,4 +511,23 @@ void CPlayer::FakeSnap(int PlayerID) {
 		StrToInts(&pClientInfo->m_Clan0, 3, "");
 		StrToInts(&pClientInfo->m_Skin0, 6, "default");
 	}
+}
+
+// refng
+void CPlayer::AddSpree() {
+    m_Spree++;
+    if(m_Spree % 5 == 0) {
+        char aBuf[512];
+        str_format(aBuf, sizeof(aBuf), "'%s' is on a spree of %d kills", Server()->ClientName(m_ClientID), m_Spree);
+        GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+    }
+}
+
+void CPlayer::EndSpree(int pKillerID) {
+    if(m_Spree >= 5) {
+        char aBuf[512];
+        str_format(aBuf, sizeof(aBuf), "'%s' ended '%s' spree of %d kills", Server()->ClientName(m_ClientID), Server()->ClientName(pKillerID), m_Spree);
+        GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+    }
+    m_Spree = 0;
 }

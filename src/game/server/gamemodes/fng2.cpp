@@ -319,6 +319,7 @@ void CGameControllerFNG2::PostReset(){
 		{
 			GameServer()->m_apPlayers[i]->Respawn();
 			GameServer()->m_apPlayers[i]->m_Score = 0;
+            GameServer()->m_apPlayers[i]->ResetSpree();
 			GameServer()->m_apPlayers[i]->ResetStats();
 			GameServer()->m_apPlayers[i]->m_ScoreStartTick = Server()->Tick();
 			GameServer()->m_apPlayers[i]->m_RespawnTick = Server()->Tick()+Server()->TickSpeed()/2;
