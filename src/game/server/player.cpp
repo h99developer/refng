@@ -526,7 +526,7 @@ void CPlayer::AddSpree() {
 void CPlayer::EndSpree(int pKillerID) {
     if(m_Spree >= 5) {
         char aBuf[512];
-        str_format(aBuf, sizeof(aBuf), "'%s' ended '%s' spree of %d kills", Server()->ClientName(m_ClientID), Server()->ClientName(pKillerID), m_Spree);
+        str_format(aBuf, sizeof(aBuf), "'%s' ended '%s' spree of %d kills", Server()->ClientName(pKillerID), Server()->ClientName(m_ClientID), m_Spree);
         GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
     }
     m_Spree = 0;
