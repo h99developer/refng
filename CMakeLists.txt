@@ -289,7 +289,7 @@ find_package(ZLIB)
 find_package(Git)
 find_package(GTest)
 find_package(Threads)
-
+find_package(CURL)
 
 if(TARGET_OS AND TARGET_OS STREQUAL "mac")
   find_program(CMAKE_OTOOL otool)
@@ -337,9 +337,13 @@ endif()
 show_dependency_status("OpenSSL Crypto" CRYPTO)
 show_dependency_status("PythonInterp" PYTHONINTERP)
 show_dependency_status("Zlib" ZLIB)
-
+show_dependency_status("Curl" CURL)
 if(NOT(PYTHONINTERP_FOUND))
   message(SEND_ERROR "You must install Python to compile Teeworlds")
+endif()
+
+if(NOT(CURL_FOUND))
+  message(SEND_ERROR "You must install Curl to compile ${CMAKE_PROJECT_NAME}")
 endif()
 
 if(NOT(GTEST_FOUND))
@@ -491,6 +495,10 @@ foreach(datafile ${DATA})
   file(COPY ${datafile} DESTINATION ${DESTINATION})
 endforeach()
 
+set(COPY_FILES
+        ${CURL_COPY_FILES}
+)
+file(COPY ${COPY_FILES} DESTINATION .)
 ########################################################################
 # CODE GENERATION
 ########################################################################
@@ -655,7 +663,7 @@ set(GAME_GENERATED_SHARED
 set(DEPS ${DEP_MD5} ${ZLIB_DEP})
 
 # Libraries
-set(LIBS ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${CRYPTO_LIBRARIES} ${PLATFORM_LIBS})
+set(LIBS ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${CRYPTO_LIBRARIES} ${PLATFORM_LIBS} ${CURL_LIBRARIES})
 
 # Targets
 add_library(engine-shared EXCLUDE_FROM_ALL OBJECT ${ENGINE_INTERFACE} ${ENGINE_SHARED} ${ENGINE_GENERATED_SHARED} ${BASE})

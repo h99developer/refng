@@ -8,6 +8,7 @@
 #include "engine/shared/protocol.h"
 #include "gamecontext.h"
 #include <game/version.h>
+#include <chrono>
 #include <game/collision.h>
 #include <game/gamecore.h>
 #include "gamemodes/fng2.h"
@@ -15,7 +16,8 @@
 #include "gamemodes/fng2boom.h"
 #include "gamemodes/fng2boomsolo.h"
 #include "gamemodes/fng2_4teams.h"
-
+#include <curl/curl.h>
+using namespace std::chrono;
 //other gametypes(for modding without changing original sources)
 #include "gamecontext_additional_gametypes_includes.h"
 
@@ -666,7 +668,6 @@ void CGameContext::OnClientEnter(int ClientID)
 		char aBuf[512];
 		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(m_apPlayers[ClientID]->GetTeam()));
 		SendChat(-1, CGameContext::CHAT_ALL, aBuf);
-
 		str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), m_apPlayers[ClientID]->GetTeam());
 		Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 	}

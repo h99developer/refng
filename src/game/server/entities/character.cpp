@@ -627,7 +627,7 @@ void CCharacter::Tick()
 
 void CCharacter::ReFNGTick()
 {
-    if(Server()->Tick() % 5 == 0 && Server()->IsAuthed(m_pPlayer->GetCID()) && !IsFrozen())
+    if(g_Config.m_SvStars && Server()->Tick() % 5 == 0 && Server()->IsAuthed(m_pPlayer->GetCID()) && !IsFrozen())
         GameServer()->CreateDamageInd(m_Pos, (float)(Server()->Tick() % 25) - .2, 1);
 }
 

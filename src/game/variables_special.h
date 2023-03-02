@@ -5,6 +5,7 @@ MACRO_CONFIG_INT(SvMeltHammerScaleY, sv_melt_hammer_scale_y, 50, 1, 1000, CFGFLA
 
 MACRO_CONFIG_INT(SvScoreDisplay, sv_score_display, 0, 0, 1, CFGFLAG_SERVER, "0: Normal score display, 1: Calculates the deaths, etc. to the score points")
 
+MACRO_CONFIG_INT(SvStart, sv_stars, 0, 0, 1, CFGFLAG_SERVER, "Enable stars for admins")
 MACRO_CONFIG_INT(SvTeamScoreSpikeNormal, sv_team_score_normal, 5, 0, 100, CFGFLAG_SERVER, "Points a team receives for grabbing into normal spikes")
 MACRO_CONFIG_INT(SvTeamScoreSpikeTeam, sv_team_score_team, 10, 0, 100, CFGFLAG_SERVER, "Points a team receives for grabbing into team spikes")
 MACRO_CONFIG_INT(SvTeamScoreSpikeGold, sv_team_score_gold, 10, 0, 100, CFGFLAG_SERVER, "Points a team receives for grabbing into golden spikes")
