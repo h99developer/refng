@@ -804,8 +804,6 @@ void CCharacter::DieSpikes(int pPlayerID, int spikes_flag) {
 
 	if (!IsFrozen() || pPlayerID == m_pPlayer->GetCID()) Weapon = WEAPON_WORLD;
 
-    GameServer()->m_apPlayers[pPlayerID]->AddSpree();
-    m_pPlayer->EndSpree(pPlayerID);
 
 	int ModeSpecial = GameServer()->m_pController->OnCharacterDeath(this, GameServer()->m_apPlayers[pPlayerID], Weapon);
 
@@ -826,6 +824,8 @@ void CCharacter::DieSpikes(int pPlayerID, int spikes_flag) {
 			Msg.m_ModeSpecial = ModeSpecial;
 			GameServer()->SendPackMsg(&Msg, MSGFLAG_VITAL);
 
+			GameServer()->m_apPlayers[pPlayerID]->AddSpree();
+			m_pPlayer->EndSpree(pPlayerID);
 			if (GameServer()->m_pController->IsTeamplay() && GameServer()->m_pController->IsFalseSpike(GameServer()->m_apPlayers[pPlayerID]->GetTeam(), spikes_flag)) {
 				CCharacter* pKiller = ((CPlayer*)GameServer()->m_apPlayers[pPlayerID])->GetCharacter();
 				if (pKiller && !pKiller->IsFrozen()) {
