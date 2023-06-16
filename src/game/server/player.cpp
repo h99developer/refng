@@ -3,6 +3,7 @@
 #include <new>
 #include <engine/shared/config.h>
 #include "player.h"
+#include <sqlite3.h>
 
 
 MACRO_ALLOC_POOL_ID_IMPL(CPlayer, MAX_CLIENTS)
@@ -514,7 +515,9 @@ void CPlayer::FakeSnap(int PlayerID) {
 }
 
 // refng
+
 void CPlayer::AddSpree() {
+
     m_Spree++;
     if(m_Spree % 5 == 0) {
         char aBuf[512];

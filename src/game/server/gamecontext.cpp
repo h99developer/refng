@@ -27,6 +27,8 @@ using namespace std::chrono;
 #include <vector>
 #include <time.h>
 
+#include <sqlite3.h>
+
 enum
 {
 	RESET,
@@ -1413,11 +1415,55 @@ void CGameContext::CmdConversation(CGameContext* pContext, int pClientID, const 
 	else pContext->SendChatTarget(pClientID, "[/conversation] usage: /c <text>, after you already whispered to a player");
 }
 
+struct Top {
+    std::string name;
+    int kills;
+};
+
+std::vector<Top> GetTop() {
+    std::vector<Top> top;
+    sqlite3* db;
+    int rc = sqlite3_open("database.db", &db);
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return top;
+    }
+
+    const char* query = "SELECT player, kills FROM players ORDER BY kills DESC LIMIT 5;";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return top;
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        int kills = sqlite3_column_int(stmt, 1);
+        top.push_back({name, kills});
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return top;
+}
+
+void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum) {
+	char buff[1024];
+	std::vector<Top> top = GetTop();
+	for (size_t i = 0; i < top.size(); ++i) {
+		const Top& player = top[i];
+		int number = i + 1;
+		str_format(buff, sizeof(buff), "%d. %s: %d kills.", number, player.name.c_str(), player.kills);
+		pContext->SendChatTarget(pClientID, buff);
+	}
+}
+
 void CGameContext::CmdMe(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum) {
 
     if (ArgNum > 0) {
         char buff[256];
-        str_format(buff, sizeof(buff), "# %s: %s", pContext->Server()->ClientName(pClientID), pArgs[0]);
+        str_format(buff, sizeof(buff), "# %s %s", pContext->Server()->ClientName(pClientID), pArgs[0]);
         pContext->SendChat(-1, CHAT_ALL, buff);
     }
 }
@@ -1905,6 +1951,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	AddServerCommand("help", "show the cmd list or get more information to any command", "<command>", CmdHelp);
 	AddServerCommand("cmdlist", "show the cmd list", 0, CmdHelp);
 	AddServerCommand("me", "sending message to chat", "<text>", CmdMe);
+	AddServerCommand("top", "top 10 killers", 0, CmdTop);
 	if(m_Config->m_SvEmoteWheel || m_Config->m_SvEmotionalTees) AddServerCommand("emote", "enable custom emotes", "<emote type> <time in seconds>", CmdEmote);
 
 	//if(!data) // only load once
@@ -1989,6 +2036,7 @@ void CGameContext::OnInit(IKernel *pKernel, IMap* pMap, CConfiguration* pConfigF
 	AddServerCommand("help", "show the cmd list or get more information to any command", "<command>", CmdHelp);
 	AddServerCommand("cmdlist", "show the cmd list", 0, CmdHelp);
 	AddServerCommand("me", "sending message to chat", "<text>", CmdMe);
+	AddServerCommand("top", "top 10 killers", 0, CmdTop);
 	if(m_Config->m_SvEmoteWheel || m_Config->m_SvEmotionalTees) AddServerCommand("emote", "enable custom emotes", "<emote type> <time in seconds>", CmdEmote);
 
 	//if(!data) // only load once

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+find_package(sqlite3)
+
 file(STRINGS src/game/version.h VERSION_LINE
   LIMIT_COUNT 1
   REGEX GAME_RELEASE_VERSION
@@ -99,6 +101,7 @@ set(SERVER_EXECUTABLE fng2_srv CACHE STRING "Name of the built server executable
 ########################################################################
 
 find_package(PythonInterp)
+find_package(SQLite3)
 
 ########################################################################
 # Compiler flags
@@ -663,7 +666,7 @@ set(GAME_GENERATED_SHARED
 set(DEPS ${DEP_MD5} ${ZLIB_DEP})
 
 # Libraries
-set(LIBS ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${CRYPTO_LIBRARIES} ${PLATFORM_LIBS} ${CURL_LIBRARIES})
+set(LIBS ${SQLite3_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${CRYPTO_LIBRARIES} ${PLATFORM_LIBS} ${CURL_LIBRARIES})
 
 # Targets
 add_library(engine-shared EXCLUDE_FROM_ALL OBJECT ${ENGINE_INTERFACE} ${ENGINE_SHARED} ${ENGINE_GENERATED_SHARED} ${BASE})
@@ -1074,6 +1077,7 @@ foreach(target ${TARGETS_OWN})
     target_compile_options(${target} PRIVATE ${OUR_FLAGS_OWN})
   endif()
   target_include_directories(${target} PRIVATE ${PROJECT_BINARY_DIR}/src)
+  target_include_directories(${target} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS} ${SQLite3_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
   target_include_directories(${target} PRIVATE src)
   target_compile_definitions(${target} PRIVATE $<$<CONFIG:Debug>:CONF_DEBUG>)
   target_include_directories(${target} PRIVATE ${CURL_INCLUDE_DIRS})

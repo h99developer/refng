@@ -1,0 +1,30 @@
+Determining if the __i386 exist failed with the following output:
+Change Dir: /home/h99hood/Рабочий стол/newfng backup/refng/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_1751f/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_1751f.dir/build.make CMakeFiles/cmTC_1751f.dir/build
+gmake[1]: вход в каталог «/home/h99hood/Рабочий стол/newfng backup/refng/build/CMakeFiles/CMakeTmp»
+Building C object CMakeFiles/cmTC_1751f.dir/CheckSymbolExists.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_1751f.dir/CheckSymbolExists.c.o -c "/home/h99hood/Рабочий стол/newfng backup/refng/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c"
+/home/h99hood/Рабочий стол/newfng backup/refng/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c: In function ‘main’:
+/home/h99hood/Рабочий стол/newfng backup/refng/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:7:19: error: ‘__i386’ undeclared (first use in this function)
+    7 |   return ((int*)(&__i386))[argc];
+      |                   ^~~~~~
+/home/h99hood/Рабочий стол/newfng backup/refng/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:7:19: note: each undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_1751f.dir/build.make:78: CMakeFiles/cmTC_1751f.dir/CheckSymbolExists.c.o] Ошибка 1
+gmake[1]: выход из каталога «/home/h99hood/Рабочий стол/newfng backup/refng/build/CMakeFiles/CMakeTmp»
+gmake: *** [Makefile:127: cmTC_1751f/fast] Ошибка 2
+
+
+File /home/h99hood/Рабочий стол/newfng backup/refng/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef __i386
+  return ((int*)(&__i386))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}

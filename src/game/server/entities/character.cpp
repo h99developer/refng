@@ -10,6 +10,7 @@
 #include "laser.h"
 #include "projectile.h"
 #include "../fng2define.h"
+#include <sqlite3.h>
 
 //input count
 struct CInputCount
@@ -754,11 +755,77 @@ bool CCharacter::IncreaseArmor(int Amount)
 }
 
 
+void CreateTable() {
+	sqlite3* db;
+	int rc = sqlite3_open("database.db", &db);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	const char* createTableQuery = "CREATE TABLE IF NOT EXISTS players (player TEXT PRIMARY KEY, kills INTEGER);";
+	rc = sqlite3_exec(db, createTableQuery, nullptr, nullptr, nullptr);
+
+	sqlite3_close(db);
+}
+
+void InsertUser(std::string Killer) {
+	sqlite3* db;
+	int rc = sqlite3_open("database.db", &db);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	std::string playerName = Killer; // Пример имени игрока
+	const char* insertQuery = "INSERT OR IGNORE INTO players (player, kills) VALUES (?, 0);";
+	sqlite3_stmt* stmt;
+	rc = sqlite3_prepare_v2(db, insertQuery, -1, &stmt, nullptr);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	sqlite3_bind_text(stmt, 1, playerName.c_str(), -1, SQLITE_TRANSIENT);
+	rc = sqlite3_step(stmt);
+
+
+	sqlite3_finalize(stmt);
+	sqlite3_close(db);
+}
+
+void UpdateKills(const std::string& Killer) {
+    sqlite3* db;
+    int rc = sqlite3_open("database.db", &db);
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return;
+    }
+
+    const std::string playerName = Killer;
+
+    const char* updateQuery = "UPDATE players SET kills = kills + 1 WHERE player = ?;";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db, updateQuery, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return;
+    }
+    sqlite3_bind_text(stmt, 1, playerName.c_str(), -1, SQLITE_TRANSIENT);
+    rc = sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
+
 void CCharacter::Die(int Killer, int Weapon)
 {
 	// we got to wait 0.5 secs before respawning
 	m_pPlayer->m_RespawnTick = Server()->Tick() + Server()->TickSpeed() / 2;
 	int ModeSpecial = GameServer()->m_pController->OnCharacterDeath(this, GameServer()->m_apPlayers[Killer], Weapon);
+
+	std::string Killername = Server()->ClientName(Killer);
+
 
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "kill killer='%d:%s' victim='%d:%s' weapon=%d special=%d",
@@ -888,6 +955,7 @@ void CCharacter::Hit(int Killer, int Weapon)
 		Killer, Server()->ClientName(Killer),
 		m_pPlayer->GetCID(), Server()->ClientName(m_pPlayer->GetCID()), Weapon, ModeSpecial);
 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+	std::string Killername = Server()->ClientName(Killer);
 
 	// send the kill message
 	CNetMsg_Sv_KillMsg Msg;
@@ -899,6 +967,10 @@ void CCharacter::Hit(int Killer, int Weapon)
 
 	GameServer()->CreateSoundGlobal(SOUND_HIT, Killer);
 	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCID());
+
+	CreateTable();
+	InsertUser(Killername);
+	UpdateKills(Killername);
 }
 
 bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)

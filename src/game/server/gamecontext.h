@@ -198,7 +198,8 @@ public:
 	static void CmdHelp(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum);
 	static void CmdEmote(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum);
 	static void CmdMe(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum);
-	
+	static void CmdTop(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum);
+
 	IServer *Server() const { return m_pServer; }
 	class IConsole *Console() { return m_pConsole; }
 	CCollision *Collision() { return &m_Collision; }
