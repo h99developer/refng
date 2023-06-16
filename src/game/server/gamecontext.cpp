@@ -1451,6 +1451,8 @@ std::vector<Top> GetTop() {
 void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum) {
 	char buff[1024];
 	std::vector<Top> top = GetTop();
+	str_format(buff, sizeof(buff), "TOP KILLS:");
+	pContext->SendChatTarget(pClientID, buff);
 	for (size_t i = 0; i < top.size(); ++i) {
 		const Top& player = top[i];
 		int number = i + 1;
