@@ -1413,6 +1413,15 @@ void CGameContext::CmdConversation(CGameContext* pContext, int pClientID, const 
 	else pContext->SendChatTarget(pClientID, "[/conversation] usage: /c <text>, after you already whispered to a player");
 }
 
+void CGameContext::CmdMe(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum) {
+
+    if (ArgNum > 0) {
+        char buff[256];
+        str_format(buff, sizeof(buff), "# %s: %s", pContext->Server()->ClientName(pClientID), pArgs[0]);
+        pContext->SendChat(-1, CHAT_ALL, buff);
+    }
+}
+
 void CGameContext::CmdHelp(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum){	
 	if (ArgNum != 0) {
 		sServerCommand* pCmd = pContext->FindCommand(pArgs[0]);
@@ -1895,6 +1904,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	AddServerCommand("c", "whisper to the player, you whispered to last", "<text>", CmdConversation);
 	AddServerCommand("help", "show the cmd list or get more information to any command", "<command>", CmdHelp);
 	AddServerCommand("cmdlist", "show the cmd list", 0, CmdHelp);
+	AddServerCommand("me", "sending message to chat", "<text>", CmdMe);
 	if(m_Config->m_SvEmoteWheel || m_Config->m_SvEmotionalTees) AddServerCommand("emote", "enable custom emotes", "<emote type> <time in seconds>", CmdEmote);
 
 	//if(!data) // only load once
@@ -1978,6 +1988,7 @@ void CGameContext::OnInit(IKernel *pKernel, IMap* pMap, CConfiguration* pConfigF
 	AddServerCommand("c", "whisper to the player, you whispered to last", "<text>", CmdConversation);
 	AddServerCommand("help", "show the cmd list or get more information to any command", "<command>", CmdHelp);
 	AddServerCommand("cmdlist", "show the cmd list", 0, CmdHelp);
+	AddServerCommand("me", "sending message to chat", "<text>", CmdMe);
 	if(m_Config->m_SvEmoteWheel || m_Config->m_SvEmotionalTees) AddServerCommand("emote", "enable custom emotes", "<emote type> <time in seconds>", CmdEmote);
 
 	//if(!data) // only load once
