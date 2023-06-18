@@ -17,6 +17,8 @@
 #include "gamemodes/fng2boomsolo.h"
 #include "gamemodes/fng2_4teams.h"
 #include <curl/curl.h>
+#include <tuple>
+#include <iostream>
 using namespace std::chrono;
 //other gametypes(for modding without changing original sources)
 #include "gamecontext_additional_gametypes_includes.h"
@@ -662,8 +664,49 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 		m_apPlayers[ClientID]->OnPredictedInput((CNetObj_PlayerInput *)pInput);
 }
 
+void InsertPlayer(std::string Killer) {
+	sqlite3* db;
+	int rc = sqlite3_open("database.db", &db);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	std::string playerName = Killer; // Пример имени игрока
+	const char* insertQuery = "INSERT OR IGNORE INTO players (player, kills) VALUES (?, 0);";
+	sqlite3_stmt* stmt;
+	rc = sqlite3_prepare_v2(db, insertQuery, -1, &stmt, nullptr);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	sqlite3_bind_text(stmt, 1, playerName.c_str(), -1, SQLITE_TRANSIENT);
+	rc = sqlite3_step(stmt);
+
+
+	sqlite3_finalize(stmt);
+	sqlite3_close(db);
+}
+
+void CreateTable() {
+	sqlite3* db;
+	int rc = sqlite3_open("database.db", &db);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	const char* createTableQuery = "CREATE TABLE IF NOT EXISTS players (player TEXT PRIMARY KEY, kills INTEGER);";
+	rc = sqlite3_exec(db, createTableQuery, nullptr, nullptr, nullptr);
+
+	sqlite3_close(db);
+}
+
 void CGameContext::OnClientEnter(int ClientID)
 {
+	CreateTable();
+
 	//world.insert_entity(&players[client_id]);
 	m_apPlayers[ClientID]->Respawn();
 	if(!m_Config->m_SvTournamentMode || m_pController->IsGameOver()) {
@@ -672,9 +715,11 @@ void CGameContext::OnClientEnter(int ClientID)
 		SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 		str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), m_apPlayers[ClientID]->GetTeam());
 		Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+
 	}
 
 	m_VoteUpdate = true;
+	InsertPlayer(Server()->ClientName(ClientID));
 }
 
 void CGameContext::OnClientConnected(int ClientID, int PreferedTeam)
@@ -1420,7 +1465,7 @@ struct Top {
     int kills;
 };
 
-std::vector<Top> GetTop() {
+std::vector<Top> GetTop(int limit) {
     std::vector<Top> top;
     sqlite3* db;
     int rc = sqlite3_open("database.db", &db);
@@ -1429,7 +1474,8 @@ std::vector<Top> GetTop() {
         return top;
     }
 
-    const char* query = "SELECT player, kills FROM players ORDER BY kills DESC LIMIT 5;";
+    char query[1024];
+    snprintf(query, sizeof(query), "SELECT player, kills FROM players ORDER BY kills DESC LIMIT %d;", limit);
     sqlite3_stmt* stmt;
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
@@ -1448,18 +1494,82 @@ std::vector<Top> GetTop() {
     return top;
 }
 
+std::tuple<std::string, int, int> GetPlayerStats(const std::string& player) {
+    std::tuple<std::string, int, int> result;
+    sqlite3* db;
+    int rc = sqlite3_open("database.db", &db);
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return result;
+    }
+
+    std::string query = "SELECT player, kills, rank FROM (SELECT player, kills, RANK() OVER (ORDER BY kills DESC) as rank FROM players) WHERE player = ?;";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return result;
+    }
+
+    rc = sqlite3_bind_text(stmt, 1, player.c_str(), -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return result;
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        int kills = sqlite3_column_int(stmt, 1);
+        int rank = sqlite3_column_int(stmt, 2);
+        result = std::make_tuple(name, kills, rank);
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return result;
+}
+
+
 void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum) {
-	char buff[1024];
-	std::vector<Top> top = GetTop();
-	str_format(buff, sizeof(buff), "TOP KILLS:");
-	pContext->SendChatTarget(pClientID, buff);
-	for (size_t i = 0; i < top.size(); ++i) {
-		const Top& player = top[i];
-		int number = i + 1;
-		str_format(buff, sizeof(buff), "%d. %s: %d kills.", number, player.name.c_str(), player.kills);
+	if (ArgNum == 0) {
+		char buff[1024];
+		std::vector<Top> top = GetTop(5);
+		str_format(buff, sizeof(buff), "TOP KILLS:");
 		pContext->SendChatTarget(pClientID, buff);
+		for (size_t i = 0; i < top.size(); ++i) {
+			const Top& player = top[i];
+			int number = i + 1;
+			str_format(buff, sizeof(buff), "%d. %s: %d kills.", number, player.name.c_str(), player.kills);
+			pContext->SendChatTarget(pClientID, buff);
+		}
+	} else {
+		if (std::stoi(pArgs[0]) >= 5 && std::stoi(pArgs[0]) <= 20) {
+			char buff[1024];
+			std::vector<Top> top = GetTop(std::stoi(pArgs[0]));
+			str_format(buff, sizeof(buff), "TOP KILLS:");
+			pContext->SendChatTarget(pClientID, buff);
+			for (size_t i = 0; i < top.size(); ++i) {
+				const Top& player = top[i];
+				int number = i + 1;
+				str_format(buff, sizeof(buff), "%d. %s: %d kills.", number, player.name.c_str(), player.kills);
+				pContext->SendChatTarget(pClientID, buff);
+			}
+			std::string pNick = pContext->Server()->ClientName(pClientID);
+			auto result = GetPlayerStats(pNick);
+			if (!std::get<0>(result).empty()) {
+				// Your rank is #1 (228 kills) 
+				str_format(buff, sizeof(buff), "Your rank is #%d (%d kills)", std::get<2>(result), std::get<1>(result));
+				pContext->SendChatTarget(pClientID, buff);
+			}
+		} else {
+			char rbuff[200];
+			str_format(rbuff, sizeof(rbuff), "The quantity cannot be less than 5 or greater than 20.");
+			pContext->SendChatTarget(pClientID, rbuff);
+		}
 	}
 }
+
 
 void CGameContext::CmdMe(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum) {
 
