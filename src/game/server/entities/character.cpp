@@ -755,44 +755,6 @@ bool CCharacter::IncreaseArmor(int Amount)
 }
 
 
-void CreateTable() {
-	sqlite3* db;
-	int rc = sqlite3_open("database.db", &db);
-	if (rc != SQLITE_OK) {
-		sqlite3_close(db);
-		return;
-	}
-
-	const char* createTableQuery = "CREATE TABLE IF NOT EXISTS players (player TEXT PRIMARY KEY, kills INTEGER);";
-	rc = sqlite3_exec(db, createTableQuery, nullptr, nullptr, nullptr);
-
-	sqlite3_close(db);
-}
-
-void InsertUser(std::string Killer) {
-	sqlite3* db;
-	int rc = sqlite3_open("database.db", &db);
-	if (rc != SQLITE_OK) {
-		sqlite3_close(db);
-		return;
-	}
-
-	std::string playerName = Killer; // Пример имени игрока
-	const char* insertQuery = "INSERT OR IGNORE INTO players (player, kills) VALUES (?, 0);";
-	sqlite3_stmt* stmt;
-	rc = sqlite3_prepare_v2(db, insertQuery, -1, &stmt, nullptr);
-	if (rc != SQLITE_OK) {
-		sqlite3_close(db);
-		return;
-	}
-
-	sqlite3_bind_text(stmt, 1, playerName.c_str(), -1, SQLITE_TRANSIENT);
-	rc = sqlite3_step(stmt);
-
-
-	sqlite3_finalize(stmt);
-	sqlite3_close(db);
-}
 
 void UpdateKills(const std::string& Killer) {
     sqlite3* db;
@@ -968,8 +930,6 @@ void CCharacter::Hit(int Killer, int Weapon)
 	GameServer()->CreateSoundGlobal(SOUND_HIT, Killer);
 	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCID());
 
-	CreateTable();
-	InsertUser(Killername);
 	UpdateKills(Killername);
 }
 
