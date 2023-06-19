@@ -1543,6 +1543,13 @@ void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pA
 			str_format(buff, sizeof(buff), "%d. %s: %d kills.", number, player.name.c_str(), player.kills);
 			pContext->SendChatTarget(pClientID, buff);
 		}
+		std::string pNick = pContext->Server()->ClientName(pClientID);
+		auto result = GetPlayerStats(pNick);
+		if (!std::get<0>(result).empty()) {
+			// Your rank is #1 (228 kills) 
+			str_format(buff, sizeof(buff), "Your rank is #%d (%d kills)", std::get<2>(result), std::get<1>(result));
+			pContext->SendChatTarget(pClientID, buff);
+		}
 	} else {
 		if (std::stoi(pArgs[0]) >= 5 && std::stoi(pArgs[0]) <= 20) {
 			char buff[1024];
