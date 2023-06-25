@@ -664,49 +664,10 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 		m_apPlayers[ClientID]->OnPredictedInput((CNetObj_PlayerInput *)pInput);
 }
 
-void InsertPlayer(std::string Killer) {
-	sqlite3* db;
-	int rc = sqlite3_open("database.db", &db);
-	if (rc != SQLITE_OK) {
-		sqlite3_close(db);
-		return;
-	}
 
-	std::string playerName = Killer; // Пример имени игрока
-	const char* insertQuery = "INSERT OR IGNORE INTO players (player, kills) VALUES (?, 0);";
-	sqlite3_stmt* stmt;
-	rc = sqlite3_prepare_v2(db, insertQuery, -1, &stmt, nullptr);
-	if (rc != SQLITE_OK) {
-		sqlite3_close(db);
-		return;
-	}
-
-	sqlite3_bind_text(stmt, 1, playerName.c_str(), -1, SQLITE_TRANSIENT);
-	rc = sqlite3_step(stmt);
-
-
-	sqlite3_finalize(stmt);
-	sqlite3_close(db);
-}
-
-void CreateTable() {
-	sqlite3* db;
-	int rc = sqlite3_open("database.db", &db);
-	if (rc != SQLITE_OK) {
-		sqlite3_close(db);
-		return;
-	}
-
-	const char* createTableQuery = "CREATE TABLE IF NOT EXISTS players (player TEXT PRIMARY KEY, kills INTEGER);";
-	rc = sqlite3_exec(db, createTableQuery, nullptr, nullptr, nullptr);
-
-	sqlite3_close(db);
-}
 
 void CGameContext::OnClientEnter(int ClientID)
 {
-	CreateTable();
-
 	//world.insert_entity(&players[client_id]);
 	m_apPlayers[ClientID]->Respawn();
 	if(!m_Config->m_SvTournamentMode || m_pController->IsGameOver()) {
@@ -719,7 +680,6 @@ void CGameContext::OnClientEnter(int ClientID)
 	}
 
 	m_VoteUpdate = true;
-	InsertPlayer(Server()->ClientName(ClientID));
 }
 
 void CGameContext::OnClientConnected(int ClientID, int PreferedTeam)
@@ -2293,6 +2253,69 @@ const char *CGameContext::GameType() { return m_pController && m_pController->m_
 const char *CGameContext::Version() { return m_Config->m_SvEmoteWheel ? GAME_VERSION_PLUS : GAME_VERSION; }
 const char *CGameContext::NetVersion() { return GAME_NETVERSION; }
 
+void InsertPlayer(std::string Killer) {
+	sqlite3* db;
+	int rc = sqlite3_open("database.db", &db);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	std::string playerName = Killer; // Пример имени игрока
+	const char* insertQuery = "INSERT OR IGNORE INTO players (player, kills) VALUES (?, 0);";
+	sqlite3_stmt* stmt;
+	rc = sqlite3_prepare_v2(db, insertQuery, -1, &stmt, nullptr);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	sqlite3_bind_text(stmt, 1, playerName.c_str(), -1, SQLITE_TRANSIENT);
+	rc = sqlite3_step(stmt);
+
+
+	sqlite3_finalize(stmt);
+	sqlite3_close(db);
+}
+
+void CreateTable() {
+	sqlite3* db;
+	int rc = sqlite3_open("database.db", &db);
+	if (rc != SQLITE_OK) {
+		sqlite3_close(db);
+		return;
+	}
+
+	const char* createTableQuery = "CREATE TABLE IF NOT EXISTS players (player TEXT PRIMARY KEY, kills INTEGER);";
+	rc = sqlite3_exec(db, createTableQuery, nullptr, nullptr, nullptr);
+
+	sqlite3_close(db);
+}
+
+void UpdateKills(const std::string& Killer, int killsToAdd) {
+    sqlite3* db;
+    int rc = sqlite3_open("database.db", &db);
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return;
+    }
+
+    const std::string playerName = Killer;
+
+    const char* updateQuery = "UPDATE players SET kills = kills + ? WHERE player = ?;";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db, updateQuery, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return;
+    }
+    sqlite3_bind_int(stmt, 1, killsToAdd);
+    sqlite3_bind_text(stmt, 2, playerName.c_str(), -1, SQLITE_TRANSIENT);
+    rc = sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
 
 void CGameContext::SendRoundStats() {
 	char buff[300];
@@ -2300,9 +2323,13 @@ void CGameContext::SendRoundStats() {
 	float bestAccuracy = 0;
 	QuadroMask bestKDPlayerIDs(0);
 	QuadroMask bestAccuarcyPlayerIDs(0);
+
+	CreateTable();
 	
 	for (int i = 0; i < MAX_CLIENTS; ++i) {
 		CPlayer* p = m_apPlayers[i];
+		
+		
 		if (!p || p->GetTeam() == TEAM_SPECTATORS) continue;
 		SendChatTarget(i, "╔═════════ Statistics ═════════");
 		SendChatTarget(i, "║");
@@ -2337,6 +2364,12 @@ void CGameContext::SendRoundStats() {
 		SendChatTarget(i, "║");
 		SendChatTarget(i, "╚══════════════════════════");
 		SendChatTarget(i, "Press F1 to view stats now!!");
+
+		std::string Nick = Server()->ClientName(i);
+		if (Nick != "(invalid)" && Nick != "Null") {
+			InsertPlayer(Nick);
+			UpdateKills(Nick, p->m_Stats.m_Kills);
+		};
 
 		float kd = ((p->m_Stats.m_Hits != 0) ? (float)((float)p->m_Stats.m_Kills / (float)p->m_Stats.m_Hits) : (float)p->m_Stats.m_Kills);
 		if (bestKD < kd) {
