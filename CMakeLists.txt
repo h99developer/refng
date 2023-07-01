@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 find_package(sqlite3)
 
+
+
 file(STRINGS src/game/version.h VERSION_LINE
   LIMIT_COUNT 1
   REGEX GAME_RELEASE_VERSION
@@ -102,6 +104,7 @@ set(SERVER_EXECUTABLE fng2_srv CACHE STRING "Name of the built server executable
 
 find_package(PythonInterp)
 find_package(SQLite3)
+
 
 ########################################################################
 # Compiler flags
@@ -673,6 +676,7 @@ add_library(engine-shared EXCLUDE_FROM_ALL OBJECT ${ENGINE_INTERFACE} ${ENGINE_S
 add_library(game-shared EXCLUDE_FROM_ALL OBJECT ${GAME_SHARED} ${GAME_GENERATED_SHARED})
 list(APPEND TARGETS_OWN engine-shared game-shared)
 
+
 ########################################################################
 # SERVER
 ########################################################################
@@ -702,6 +706,8 @@ set_src(GAME_SERVER GLOB_RECURSE src/game/server
   fng2define.h
   gamecontext.cpp
   gamecontext.h
+  database.cpp
+  database.h
   gamecontext_additional_gametypes.h
   gamecontext_additional_gametypes_includes.h
   gamecontroller.cpp
@@ -737,6 +743,7 @@ endif()
 # Libraries
 set(LIBS_SERVER ${LIBS})
 
+
 # Target
 set(TARGET_SERVER ${SERVER_EXECUTABLE})
 add_executable(${TARGET_SERVER}
@@ -746,6 +753,7 @@ add_executable(${TARGET_SERVER}
   $<TARGET_OBJECTS:engine-shared>
   $<TARGET_OBJECTS:game-shared>
 )
+target_link_libraries(${TARGET_SERVER} -lpqxx -lpq)
 target_link_libraries(${TARGET_SERVER} ${LIBS_SERVER})
 list(APPEND TARGETS_OWN ${TARGET_SERVER})
 list(APPEND TARGETS_LINK ${TARGET_SERVER})
@@ -1096,3 +1104,4 @@ foreach(target ${TARGETS_DEP})
     target_compile_options(${target} PRIVATE ${OUR_FLAGS_DEP})
   endif()
 endforeach()
+
