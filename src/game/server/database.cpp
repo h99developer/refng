@@ -12,8 +12,6 @@ void addPlayer(const std::string& playerName, int kills)
   try {
     pqxx::connection conn("dbname=tw user=tw password=OwnLittleWorld hostaddr=193.124.113.236 port=5432");
     if (conn.is_open()) {
-      std::cout << "Opened database successfully: " << conn.dbname() << std::endl;
-
       pqxx::work txn(conn);
 
       
@@ -26,7 +24,6 @@ void addPlayer(const std::string& playerName, int kills)
       int count = result[0][0].as<int>();
       if (count > 0) {
         txn.abort();
-        std::cerr << "Player " << playerName << " already exists in the database." << std::endl;
       } else {
         
         sql = "INSERT INTO players (player, kills) VALUES ('" + playerName + "', " + std::to_string(kills) + ")";
@@ -35,8 +32,6 @@ void addPlayer(const std::string& playerName, int kills)
         txn.exec(sql);
 
         txn.commit();
-
-        std::cout << "Player added successfully." << std::endl;
       }
     } else {
       std::cerr << "Failed to open database." << std::endl;
@@ -53,13 +48,11 @@ void addKills(const std::string& player, int kills_to_add)
     pqxx::connection conn("dbname=tw user=tw password=OwnLittleWorld hostaddr=193.124.113.236 port=5432");
     pqxx::work txn(conn);
     
-    // Прибавляем количество убийств для игрока
     txn.exec("UPDATE players SET kills = kills + " + std::to_string(kills_to_add) +
              " WHERE player = " + txn.quote(player));
              
     txn.commit();
     
-    std::cout << "Количество убийств для игрока " << player << " увеличено на " << kills_to_add << std::endl;
   }
   catch (const std::exception& e)
   {
@@ -75,7 +68,6 @@ std::vector<std::pair<std::string, int>> getTopPlayers()
   try {
     pqxx::connection conn("dbname=tw user=tw password=OwnLittleWorld hostaddr=193.124.113.236 port=5432");
     if (conn.is_open()) {
-      std::cout << "Opened database successfully: " << conn.dbname() << std::endl;
 
       pqxx::work txn(conn);
 
@@ -104,7 +96,6 @@ void getPlayerData(const std::string& playerName)
   try {
     pqxx::connection conn("dbname=tw user=tw password=OwnLittleWorld hostaddr=193.124.113.236 port=5432");
     if (conn.is_open()) {
-      std::cout << "Opened database successfully: " << conn.dbname() << std::endl;
 
       pqxx::work txn(conn);
 
