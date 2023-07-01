@@ -30,7 +30,7 @@ using namespace std::chrono;
 #include <vector>
 #include <time.h>
 
-#include <sqlite3.h>
+
 
 #include "database.h"
 #include <future>
