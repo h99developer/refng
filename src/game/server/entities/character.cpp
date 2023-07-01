@@ -10,7 +10,7 @@
 #include "laser.h"
 #include "projectile.h"
 #include "../fng2define.h"
-#include <sqlite3.h>
+
 
 //input count
 struct CInputCount
