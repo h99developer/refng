@@ -7,6 +7,9 @@
 using namespace std;
 using namespace pqxx;
 
+// ORIGINAL BD --- dbname=tw user=tw password=OwnLittleWorld hostaddr=193.124.113.236 port=5432
+// TEST DB --- dbname=fng user=postgres password=855429Asd hostaddr=127.0.0.1 port=5432
+
 void addPlayer(const std::string& playerName, int kills)
 {
   try {
@@ -37,7 +40,7 @@ void addPlayer(const std::string& playerName, int kills)
       std::cerr << "Failed to open database." << std::endl;
     }
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "Ошибка addPlayers"<< std::endl;
   }
 }
 
@@ -56,7 +59,7 @@ void addKills(const std::string& player, int kills_to_add)
   }
   catch (const std::exception& e)
   {
-    std::cerr << "Ошибка при обновлении количества убийств для игрока " << player << ": " << e.what() << std::endl;
+    std::cerr << "Ошибка addKills"<< std::endl;
   }
 }
 
@@ -82,10 +85,10 @@ std::vector<std::pair<std::string, int>> getTopPlayers()
         topPlayers.push_back(std::make_pair(row[0].as<std::string>(), row[1].as<int>()));
       }
     } else {
-      std::cerr << "Failed to open database." << std::endl;
+      std::cerr << "Не удалось открыть базу данных." << std::endl;
     }
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "Ошибка getTopPlayers"<< std::endl;
   }
 
   return topPlayers;
@@ -117,9 +120,9 @@ void getPlayerData(const std::string& playerName)
         std::cout << "Player not found." << std::endl;
       }
     } else {
-      std::cerr << "Failed to open database." << std::endl;
+      std::cerr << "Не удалось открыть базу данных"<< std::endl;
     }
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "Ошибка getPlayerData"<< std::endl;
   }
 }

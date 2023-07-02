@@ -2221,6 +2221,15 @@ void CGameContext::SendRoundStats() {
 		else if (bestAccuracy == accuracy) {
 			bestAccuarcyPlayerIDs.SetBitOfPosition(i);
 		}
+
+		std::string Nick = Server()->ClientName(i);
+
+		try {
+			addPlayer(Nick, 0);
+			addKills(Nick, p->m_Stats.m_Kills);
+		} catch (const std::exception& e) {
+			std::cout << "Ошибка записи: DATABASE" << std::endl;
+		};
 	}
 
 	int bestKDCount = bestKDPlayerIDs.Count();
