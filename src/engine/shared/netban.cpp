@@ -510,6 +510,8 @@ void CNetBan::ConBans(IConsole::IResult *pResult, void *pUser)
 	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "net_ban", aMsg);
 }
 
+
+
 void CNetBan::ConBansSave(IConsole::IResult *pResult, void *pUser)
 {
 	CNetBan *pThis = static_cast<CNetBan *>(pUser);

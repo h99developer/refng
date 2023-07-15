@@ -27,6 +27,8 @@
 
 #include <mastersrv/mastersrv.h>
 
+#include "../src/game/server/database.h"
+
 #include "register.h"
 #include "server.h"
 
@@ -1994,6 +1996,7 @@ void CServer::ConKick(IConsole::IResult *pResult, void *pUser)
 		((CServer *)pUser)->Kick(pResult->GetInteger(0), "Kicked by console");
 }
 
+
 void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 {
 	char aBuf[1024];
@@ -2080,6 +2083,9 @@ void CServer::ConStopRecord(IConsole::IResult *pResult, void *pUser)
 {
 	((CServer *)pUser)->m_DemoRecorder.Stop();
 }
+
+
+
 
 void CServer::ConMapReload(IConsole::IResult *pResult, void *pUser)
 {
@@ -2235,6 +2241,7 @@ void CServer::RegisterCommands()
 	Console()->Register("stoprecord", "", CFGFLAG_SERVER, ConStopRecord, this, "Stop recording");
 
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
+
 
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
@@ -2538,9 +2545,18 @@ int main(int argc, const char **argv) // ignore_convention
 
 	pEngine->InitLogfile();
 
+	std::string dbname = g_Config.m_SvPsqlDatabase;
+	std::string user = g_Config.m_SvPsqlUser;
+	std::string password = g_Config.m_SvPsqlPassword;
+	std::string host = g_Config.m_SvPsqlHost;
+	std::string port = g_Config.m_SvPsqlPort;
+
+	DatabaseInit(dbname, user, password, host, port);
+
 	// run the server
 	dbg_msg("server", "starting...");
 	pServer->Run();
+
 
 	// free
 	delete pServer;

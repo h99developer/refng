@@ -3,6 +3,7 @@
 #include <new>
 #include <engine/shared/config.h>
 #include "player.h"
+#include "database.h"
 
 
 
@@ -219,6 +220,12 @@ void CPlayer::OnDisconnect(const char *pReason)
 
 			str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", m_ClientID, Server()->ClientName(m_ClientID));
 			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
+
+			char ip_str[NETADDR_MAXSTRSIZE];
+			Server()->GetClientAddr(m_ClientID, ip_str, sizeof(ip_str));
+
+			closeSession(ip_str);
+
 		}
 	}
 }

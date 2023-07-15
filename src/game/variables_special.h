@@ -32,6 +32,14 @@ MACRO_CONFIG_INT(SvSmoothFreezeMode, sv_smooth_freeze_mode, 1, 0, 1, CFGFLAG_SER
 MACRO_CONFIG_INT(SvEmotionalTees, sv_emotional_tees, 0, 0, 1, CFGFLAG_SERVER, "Enable /emote chat command.")
 MACRO_CONFIG_INT(SvEmoteWheel, sv_emote_wheel, 0, 0, 1, CFGFLAG_SERVER, "Enable emote wheel like in ddrace with /emote chat command.")
 
+// database
+MACRO_CONFIG_STR(SvPsqlHost, sv_psql_host, 50, "None", CFGFLAG_SERVER, "PostgreSQL Host");
+MACRO_CONFIG_STR(SvPsqlPort, sv_psql_port, 50, "None", CFGFLAG_SERVER, "PostgreSQL Port");
+MACRO_CONFIG_STR(SvPsqlUser, sv_psql_user, 50, "None", CFGFLAG_SERVER, "PostgreSQL User");
+MACRO_CONFIG_STR(SvPsqlPassword, sv_psql_password, 50, "None", CFGFLAG_SERVER, "PostgreSQL Password");
+MACRO_CONFIG_STR(SvPsqlDatabase, sv_psql_db_name, 50, "None", CFGFLAG_SERVER, "PostgreSQL Database Name");
+
+
 //ddnet thingy
 MACRO_CONFIG_INT(SvMapWindow, sv_map_window, 10, 0, 100, CFGFLAG_SERVER, "Map downloading send-ahead window")
 // netlimit
