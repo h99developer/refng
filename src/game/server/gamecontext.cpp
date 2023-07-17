@@ -1616,34 +1616,7 @@ void CGameContext::ConRestart(IConsole::IResult *pResult, void *pUserData)
 		pSelf->m_pController->StartRound();
 }
 
-void ConNicksFinder(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *)pUserData;
 
-    const char *pIP = pResult->GetString(0);
-	
-    // Получаем список пользователей с заданным IP-адресом
-    std::vector<std::string> users = GetUsersByIP(pIP);
-
-    // Если список пользователей не пустой, отправляем его в чат поочередно
-    if (!users.empty())
-    {
-        char aBuf[256];
-        str_format(aBuf, sizeof(aBuf), "Users with IP address %s:", pIP);
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "IP Checker", aBuf);
-        for (const auto& user : users)
-        {	
-            str_format(aBuf, sizeof(aBuf), "- %s", user.c_str());
-            pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "IP Checker", aBuf);
-        }
-    }
-    else
-    {
-        char bBuf[256];
-        str_format(bBuf, sizeof(bBuf), "No users found with IP address %s", pIP);
-        pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "IP Checker", bBuf);
-    }
-}
 
 void CGameContext::ConBroadcast(IConsole::IResult *pResult, void *pUserData)
 {
@@ -1982,7 +1955,6 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("restart", "?i", CFGFLAG_SERVER|CFGFLAG_STORE, ConRestart, this, "Restart in x seconds (0 = abort)");
 	Console()->Register("broadcast", "r", CFGFLAG_SERVER, ConBroadcast, this, "Broadcast message");
 	Console()->Register("say", "r", CFGFLAG_SERVER, ConSay, this, "Say in chat");
-	Console()->Register("nicks", "r", CFGFLAG_SERVER, ConNicksFinder, this, "Find nicknames by IP");
 	Console()->Register("set_team", "ii?i", CFGFLAG_SERVER, ConSetTeam, this, "Set team of player to team");
 	Console()->Register("set_team_all", "i", CFGFLAG_SERVER, ConSetTeamAll, this, "Set team of all players to team");
 	Console()->Register("swap_teams", "", CFGFLAG_SERVER, ConSwapTeams, this, "Swap the current teams");
