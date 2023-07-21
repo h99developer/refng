@@ -688,15 +688,8 @@ void CGameContext::OnClientEnter(int ClientID)
     char ip_str[NETADDR_MAXSTRSIZE];
     Server()->GetClientAddr(ClientID, ip_str, sizeof(ip_str));
 	
-    auto myFuture = std::async(std::launch::async, [Nickname, ip_str]() {
-        return newSession(Nickname, ip_str);
-    });
-    bool Result = myFuture.get();
-    if (Result == false) {
-        char buffik[512];
-        str_format(buffik, sizeof(buffik), "ОШИБКА ПОДКЛЮЧЕНИИ К БАЗЕ ДАННЫХ, НЕМЕДЛЕНО ПРОВЕРЬТЕ РАБОТОСПОСОБНОСТЬ БАЗЫ ДАННЫХ!");
-        Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "DataBase", buffik);
-    }
+	std::thread newSessionTH(newSession, Nickname, ip_str);
+	newSessionTH.detach();
 }
 
 
@@ -1441,9 +1434,17 @@ void CGameContext::CmdConversation(CGameContext* pContext, int pClientID, const 
 }
 
 
+
+#include <thread>
+#include <vector>
+
+#include <thread>
+#include <vector>
+
 void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum) {
 	if (ArgNum > 0) {
 		std::string Column = pArgs[0];
+		std::vector<std::pair<std::string, int>> topPlayers;
 		
 		if (Column == "normal" ||
 			Column == "gold" ||
@@ -1452,7 +1453,15 @@ void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pA
 			Column == "team" || 
 			Column == "false")
 		{
-			std::vector<std::pair<std::string, int>> topPlayers = getTopPlayers(Column + "_spikes");
+			// создание нового потока выполнения
+			std::thread t([=, &topPlayers]() {
+				auto temp = getTopPlayers(Column + "_spikes");
+				topPlayers = std::move(temp);
+			});
+
+			// ожидание завершения потока выполнения
+			t.detach();
+
 			char buff[1024];
 			str_format(buff, sizeof(buff), "TOP %s SPIKES:", pArgs[0]);
 			pContext->SendChatTarget(pClientID, buff);
@@ -1461,34 +1470,47 @@ void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pA
 				int number = i + 1;
 				str_format(buff, sizeof(buff), "%d. %s: %d", number, playerName.c_str(), value);
 				pContext->SendChatTarget(pClientID, buff);
-		}
-	} else if (Column == "freezes") {
-		std::vector<std::pair<std::string, int>> topPlayers = getTopPlayers("hit");
-		char buff[1024];
-		str_format(buff, sizeof(buff), "TOP %s", pArgs[0]);
-		pContext->SendChatTarget(pClientID, buff);
-		for (size_t i = 0; i < topPlayers.size(); ++i) {
-			const auto& [playerName, value] = topPlayers[i];
-			int number = i + 1;
-			str_format(buff, sizeof(buff), "%d. %s: %d", number, playerName.c_str(), value);
-			pContext->SendChatTarget(pClientID, buff);
-		}
-	} else if (Column == "accuracy") {
-		std::vector<PlayerStats> players = get_top_accuracy();
+			}
+		} else if (Column == "freezes") {
+			// создание нового потока выполнения
+			std::thread t([&topPlayers]() {
+				auto temp = getTopPlayers("hit");
+				topPlayers = std::move(temp);
+			});
 
-		char buff[1024];
-		str_format(buff, sizeof(buff), "TOP ACCURACY:");
-		pContext->SendChatTarget(pClientID, buff);
+			// ожидание завершения потока выполнения
+			t.detach();
 
-		int place = 1;
-		for (const auto& player : players)
-		{
-			str_format(buff, sizeof(buff), "%d. %s: %.2f%%", place, player.name.c_str(), player.shots_per_hit * 100);
+			char buff[1024];
+			str_format(buff, sizeof(buff), "TOP %s", pArgs[0]);
 			pContext->SendChatTarget(pClientID, buff);
-			place++;
+			for (size_t i = 0; i < topPlayers.size(); ++i) {
+				const auto& [playerName, value] = topPlayers[i];
+				int number = i + 1;
+				str_format(buff, sizeof(buff), "%d. %s: %d", number, playerName.c_str(), value);
+				pContext->SendChatTarget(pClientID, buff);
+			}
+		} else if (Column == "kills") {
+			// создание нового потока выполнения
+			std::thread t([&topPlayers]() {
+				auto temp = getTopPlayers("kills");
+				topPlayers = std::move(temp);
+			});
+
+			// ожидание завершения потока выполнения
+			t.detach();
+
+			char buff[1024];
+			str_format(buff, sizeof(buff), "TOP %s", pArgs[0]);
+			pContext->SendChatTarget(pClientID, buff);
+			for (size_t i = 0; i < topPlayers.size(); ++i) {
+				const auto& [playerName, value] = topPlayers[i];
+				int number = i + 1;
+				str_format(buff, sizeof(buff), "%d. %s: %d", number, playerName.c_str(), value);
+				pContext->SendChatTarget(pClientID, buff);
 		}
 	}
-}
+	}
 }
 
 void CGameContext::CmdMe(CGameContext* pContext, int pClientID, const char** pArgs, int ArgNum) {
@@ -2280,24 +2302,29 @@ void CGameContext::SendRoundStats() {
 		std::string Nick = Server()->ClientName(i);
 
 		try {
-			addPlayer(Nick, 0);
+
+			//			std::thread t([=, &topPlayers]() {
+			//	auto temp = getTopPlayers(Column + "_spikes");
+			//	topPlayers = std::move(temp);
+			//});
+
+			// ожидание завершения потока выполнения
+			//t.join();
+
+			std::thread addPlayerTH(addPlayer, Nick, 0);
+			addPlayerTH.detach();
+
 			int kills = p->m_Stats.m_GrabsNormal + p->m_Stats.m_GrabsGold + p->m_Stats.m_GrabsGreen + p->m_Stats.m_GrabsPurple + p->m_Stats.m_GrabsTeam + p->m_Stats.m_GrabsFalse;
-			// TEST DB --- dbname=fng user=postgres password=855429Asd hostaddr=127.0.0.1 port=5432
-			addKills(Nick, kills);
-			addSpikes(
-				Nick,
-				p->m_Stats.m_GrabsNormal,
-				p->m_Stats.m_GrabsGold,
-				p->m_Stats.m_GrabsGreen,
-				p->m_Stats.m_GrabsPurple,
-				p->m_Stats.m_GrabsTeam,
-				p->m_Stats.m_GrabsFalse
-			);
-			addShotsAndHits(
-				Nick,
-				p->m_Stats.m_Shots,
-				p->m_Stats.m_Kills
-			);
+			std::thread addKillsTH(addKills, Nick, kills);
+			addKillsTH.detach();
+
+
+			std::thread addSpikesTH(addSpikes, Nick, p->m_Stats.m_GrabsNormal, p->m_Stats.m_GrabsGold, p->m_Stats.m_GrabsGreen, p->m_Stats.m_GrabsPurple, p->m_Stats.m_GrabsTeam, p->m_Stats.m_GrabsFalse);
+			addSpikesTH.detach();
+
+			std::thread addShotsAndHitsTH(addShotsAndHits, Nick, p->m_Stats.m_Shots, p->m_Stats.m_Kills);
+			addShotsAndHitsTH.detach();
+
 		} catch (const std::exception& e) {
 			std::cout << "Ошибка записи: DATABASE" << std::endl;
 		};

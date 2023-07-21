@@ -4,6 +4,7 @@
 #include <engine/shared/config.h>
 #include "player.h"
 #include "database.h"
+#include <thread>
 
 
 
@@ -224,7 +225,9 @@ void CPlayer::OnDisconnect(const char *pReason)
 			char ip_str[NETADDR_MAXSTRSIZE];
 			Server()->GetClientAddr(m_ClientID, ip_str, sizeof(ip_str));
 
-			closeSession(ip_str);
+			std::thread closeSessionTH(closeSession, ip_str);
+			closeSessionTH.detach();
+
 
 		}
 	}
