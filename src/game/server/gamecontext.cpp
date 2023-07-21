@@ -346,7 +346,22 @@ void CGameContext::SendChat(int ChatterClientID, int Team, const char *pText, in
 		CNetMsg_Sv_Chat Msg;
 		Msg.m_Team = 0;
 		Msg.m_ClientID = ChatterClientID;
-		Msg.m_pMessage = pText;
+		std::string Text = pText;
+		if (
+			Text.find("http") != std::string::npos ||
+			Text.find("t.me") != std::string::npos ||
+			Text.find("discord.gg") != std::string::npos ||
+			Text.find("vk.com") != std::string::npos ||
+			Text.find("twitch.tv") != std::string::npos
+			) {
+			Msg.m_pMessage = "Ай ай ай... Реклама на данном сервере запрещена!";
+		} else {
+			int charCount = std::count(Text.begin(), Text.end(), '.');
+			if (charCount >= 3 && Text.find(":") != std::string::npos) {
+				Msg.m_pMessage = "Ай ай ай... Реклама на данном сервере запрещена!";
+			}
+			else {Msg.m_pMessage = pText;}
+			}
 		SendPackMsg(&Msg, MSGFLAG_VITAL);
 	}
 
