@@ -360,7 +360,9 @@ void CGameContext::SendChat(int ChatterClientID, int Team, const char *pText, in
 			if (charCount >= 3 && Text.find(":") != std::string::npos) {
 				Msg.m_pMessage = "Ай ай ай... Реклама на данном сервере запрещена!";
 			}
-			else {Msg.m_pMessage = pText;}
+			else {
+				Msg.m_pMessage = pText;
+				}
 			}
 		SendPackMsg(&Msg, MSGFLAG_VITAL);
 	}
@@ -2337,6 +2339,9 @@ void CGameContext::SendRoundStats() {
 			std::thread addSpikesTH(addSpikes, Nick, p->m_Stats.m_GrabsNormal, p->m_Stats.m_GrabsGold, p->m_Stats.m_GrabsGreen, p->m_Stats.m_GrabsPurple, p->m_Stats.m_GrabsTeam, p->m_Stats.m_GrabsFalse);
 			addSpikesTH.detach();
 
+			// std::thread updateRankTH(updateRank, Nick);
+			// updateRankTH.detach();
+			
 			std::thread addShotsAndHitsTH(addShotsAndHits, Nick, p->m_Stats.m_Shots, p->m_Stats.m_Kills);
 			addShotsAndHitsTH.detach();
 

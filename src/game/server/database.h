@@ -25,3 +25,4 @@ void addShotsAndHits(const std::string& player, int shots_to_add, int hits_to_ad
 std::vector<PlayerStats> get_top_accuracy();
 void DatabaseInit(std::string dbname, std::string user, std::string password, std::string host, std::string port);
 std::vector<std::string> GetUsersByIP(const std::string& ip_address);
+void updateRank(const std::string& nickname);

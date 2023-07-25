@@ -47,6 +47,14 @@ void DatabaseInit(std::string dbname, std::string user, std::string password, st
 
 }
 
+int getKills(const std::string& player) {
+  std::string dbconn = "dbname=" + static_cast<std::string>(psqldbname) + " user=" + static_cast<std::string>(psqluser) + " password=" + static_cast<std::string>(psqlpassword) + " hostaddr=" + static_cast<std::string>(psqlhost) + " port=" + static_cast<std::string>(psqlport);
+  pqxx::connection conn(dbconn);
+  pqxx::work txn(conn);
+  pqxx::result res = txn.exec("SELECT kills FROM players WHERE player ='" + player + "'");
+  return res[0][0].as<int>();
+}
+
 void addPlayer(const std::string& playerName, int kills)
 {
   std::string dbconn = "dbname=" + static_cast<std::string>(psqldbname) + " user=" + static_cast<std::string>(psqluser) + " password=" + static_cast<std::string>(psqlpassword) + " hostaddr=" + static_cast<std::string>(psqlhost) + " port=" + static_cast<std::string>(psqlport);
@@ -59,6 +67,8 @@ void addPlayer(const std::string& playerName, int kills)
     
             // выполняем запрос
             pqxx::result result = txn.exec(sql);
+
+            // std::string Rank = GetRank(kills);
     
             int count = result[0][0].as<int>();
             if (count > 0) {
@@ -399,4 +409,137 @@ std::vector<std::string> GetUsersByIP(const std::string& ip_address)
     }
 
     return users;
+}
+
+std::string GetRank(
+  int kills
+)
+{
+  std::string Rank;
+  if (kills < 100) {
+    Rank = "Без ранга";
+  }
+  if (kills >= 100 && kills < 300) {
+    Rank = "Клоун";
+  }
+  if (kills >= 300 && kills < 500) {
+    Rank = "Малой";
+  }
+  if (kills >= 500 && kills < 800) {
+    Rank = "Чудак";
+  }
+  if (kills >= 800 && kills < 1100) {
+    Rank = "Робкий";
+  }
+  if (kills >= 1100 && kills < 1400) {
+    Rank = "Новичок";
+  }
+  if (kills >= 1400 && kills < 1800) {
+    Rank = "Пупа"; 
+  }
+  if (kills >= 1800 && kills < 2200) {
+    Rank = "Лупа";
+  }
+  if (kills >= 2200 && kills < 2600) {
+    Rank = "Рядовой";
+  }
+  if (kills >= 2600 && kills < 3000) {
+    Rank = "Шкипер";
+  }
+  if (kills >= 3000 && kills < 3500) {
+    Rank = "Проворный"; 
+  }
+  if (kills >= 3500 && kills < 4000) {
+    Rank = "Буйный";
+  }
+  if (kills >= 4000 && kills < 4500) {
+    Rank = "Мамкин мародер";
+  }
+  if (kills >= 4500 && kills < 5000) {
+    Rank = "Болгарин";
+  }
+  if (kills >= 5000 && kills < 5600) {
+    Rank = "Боец";
+  }
+  if (kills >= 5600 && kills < 6200) {
+    Rank = "Самурай";
+  }
+  if (kills >= 6200 && kills < 6900) {
+    Rank = "Шаолинь";
+  }
+  if (kills >= 6900 && kills < 7600) {
+    Rank = "Жнец";
+  }
+  if (kills >= 7600 && kills < 8400) {
+    Rank = "Охотник на колобков";
+  }
+  if (kills >= 8400 && kills < 9200) {
+    Rank = "Хищник"; 
+  }
+  if (kills >= 9200 && kills < 10100) {
+    Rank = "Блэйд";
+  }
+  if (kills >= 10100 && kills < 11000) {
+    Rank = "Лазерный алхимик";
+  }
+  if (kills >= 11000 && kills < 12000) {
+    Rank = "Повелитель фризов";
+  }
+  if (kills >= 12000 && kills < 13000) {
+    Rank = "Аннигиляторная пушка";
+  }
+  if (kills >= 13000 && kills < 15000) {
+    Rank = "Баба Яга";
+  }
+  if (kills >= 15000 && kills < 17000) {
+    Rank = "Штурмовик";
+  }
+  if (kills >= 17000 && kills < 20000) {
+    Rank = "Падаван";
+  }
+  if (kills >= 20000 && kills < 23000) {
+    Rank = "Джедай";
+  }
+  if (kills >= 23000 && kills < 27000) {
+    Rank = "Ювелир";
+  }
+  if (kills >= 27000 && kills < 31000) {
+    Rank = "Несокрушимый";
+  }
+  if (kills >= 31000 && kills < 35000) {
+    Rank = "Титан";
+  }
+  if (kills >= 35000 && kills < 40000) {
+    Rank = "Батя";
+  }
+  if (kills >= 40000 && kills < 45000) {
+    Rank = "Колосажатель";
+  }
+  if (kills >= 45000 && kills < 50000) {
+    Rank = "Легендарный колобок";
+  }
+  if (kills >= 50000) {
+    Rank = "Повелитель арены";
+  }
+
+  return Rank;
+}
+
+void updateRank(const std::string& nickname) {
+  std::string dbconn = "dbname=" + static_cast<std::string>(psqldbname) + " user=" + static_cast<std::string>(psqluser) + " password=" + static_cast<std::string>(psqlpassword) + " hostaddr=" + static_cast<std::string>(psqlhost) + " port=" + static_cast<std::string>(psqlport);
+    try {
+        pqxx::connection conn(dbconn);
+
+        pqxx::work txn(conn);
+
+        int kills = getKills(nickname);
+        std::string Rank = GetRank(kills);
+
+        std::string sql = "UPDATE players SET lrank = " + txn.quote(Rank) + " WHERE player = " + txn.quote(nickname) + "";
+        txn.exec(sql);
+
+        txn.commit();
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка updateRank: " << e.what() << std::endl;
+    }
 }

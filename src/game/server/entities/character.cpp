@@ -10,6 +10,7 @@
 #include "laser.h"
 #include "projectile.h"
 #include "../fng2define.h"
+#include <iostream>
 
 
 //input count
