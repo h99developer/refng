@@ -1477,7 +1477,7 @@ void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pA
 			});
 
 			// ожидание завершения потока выполнения
-			t.detach();
+			t.join();
 
 			char buff[1024];
 			str_format(buff, sizeof(buff), "TOP %s SPIKES:", pArgs[0]);
@@ -1496,7 +1496,7 @@ void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pA
 			});
 
 			// ожидание завершения потока выполнения
-			t.detach();
+			t.join();
 
 			char buff[1024];
 			str_format(buff, sizeof(buff), "TOP %s", pArgs[0]);
@@ -1515,7 +1515,7 @@ void CGameContext::CmdTop(CGameContext* pContext, int pClientID, const char** pA
 			});
 
 			// ожидание завершения потока выполнения
-			t.detach();
+			t.join();
 
 			char buff[1024];
 			str_format(buff, sizeof(buff), "TOP %s", pArgs[0]);

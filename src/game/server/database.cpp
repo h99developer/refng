@@ -314,7 +314,7 @@ void closeSession(const std::string& ip) {
 
         std::string Date = GetDate();
 
-        std::string sql = "UPDATE sessions SET out_in = " + txn.quote(Date) + " WHERE ip = " + txn.quote(ip) + " AND out_in = 'None'";
+        std::string sql = "UPDATE sessions SET out_in = '" + Date + "' WHERE ip = '" + ip + "' AND out_in = 'None'";
         txn.exec(sql);
 
         txn.commit();
