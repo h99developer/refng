@@ -57,7 +57,7 @@ void BuildPackets()
 	}
 }
 
-void SendVer(NETADDR *pAddr, TOKEN ResponseToken)
+void SendVer(NETADDR *pAddr)
 {
 	CNetChunk p;
 	unsigned char aData[sizeof(VERSIONSRV_VERSION) + sizeof(GAME_RELEASE_VERSION)];
@@ -71,7 +71,7 @@ void SendVer(NETADDR *pAddr, TOKEN ResponseToken)
 	p.m_pData = aData;
 	p.m_DataSize = sizeof(aData);
 
-	g_NetOp.Send(&p, ResponseToken);
+	g_NetOp.Send(&p);
 }
 
 int main(int argc, char **argv) // ignore_convention
@@ -80,16 +80,10 @@ int main(int argc, char **argv) // ignore_convention
 
 	dbg_logger_stdout();
 	net_init();
-	CNetBase::Init();
 
 	mem_zero(&BindAddr, sizeof(BindAddr));
 	BindAddr.type = NETTYPE_ALL;
 	BindAddr.port = VERSIONSRV_PORT;
-	if(secure_random_init() != 0)
-	{
-		dbg_msg("versionsrv", "could not initialize secure RNG");
-		return -1;
-	}
 	if(!g_NetOp.Open(BindAddr, 0))
 	{
 		dbg_msg("mastersrv", "couldn't start network");
@@ -106,17 +100,15 @@ int main(int argc, char **argv) // ignore_convention
 
 		// process packets
 		CNetChunk Packet;
-		TOKEN ResponseToken;
-		while(g_NetOp.Recv(&Packet, &ResponseToken))
+		while(g_NetOp.Recv(&Packet))
 		{
 			if(Packet.m_DataSize == sizeof(VERSIONSRV_GETVERSION) &&
 				mem_comp(Packet.m_pData, VERSIONSRV_GETVERSION, sizeof(VERSIONSRV_GETVERSION)) == 0)
 			{
-				SendVer(&Packet.m_Address, ResponseToken);
+				SendVer(&Packet.m_Address);
 			}
 
-			//disable that for now
-			/*if(Packet.m_DataSize == sizeof(VERSIONSRV_GETMAPLIST) &&
+			if(Packet.m_DataSize == sizeof(VERSIONSRV_GETMAPLIST) &&
 				mem_comp(Packet.m_pData, VERSIONSRV_GETMAPLIST, sizeof(VERSIONSRV_GETMAPLIST)) == 0)
 			{
 				CNetChunk p;
@@ -128,9 +120,9 @@ int main(int argc, char **argv) // ignore_convention
 				{
 					p.m_DataSize = m_aPackets[i].m_Size;
 					p.m_pData = &m_aPackets[i].m_Data;
-					g_NetOp.Send(&p, ResponseToken);
+					g_NetOp.Send(&p);
 				}
-			}*/
+			}
 		}
 
 		// be nice to the CPU

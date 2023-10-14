@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
+
+find_package(sqlite3)
+
+
 
 file(STRINGS src/game/version.h VERSION_LINE
   LIMIT_COUNT 1
@@ -17,10 +21,6 @@ else()
   message(FATAL_ERROR "Couldn't parse version from src/game/version.h")
 endif()
 
-if(POLICY CMP0072)
-  cmake_policy(SET CMP0072 OLD)
-endif()
-
 if(POLICY CMP0091)
   cmake_policy(SET CMP0091 NEW)
 endif()
@@ -31,9 +31,9 @@ endif()
 
 if(POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
-  project(teeworlds VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+  project(fng VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 else()
-  project(teeworlds)
+  project(fng)
   set(PROJECT_VERSION_MAJOR ${VERSION_MAJOR})
   set(PROJECT_VERSION_MINOR ${VERSION_MINOR})
   set(PROJECT_VERSION_PATCH ${VERSION_PATCH})
@@ -77,7 +77,7 @@ if(TARGET_OS STREQUAL "windows")
 endif()
 
 option(DOWNLOAD_DEPENDENCIES "Download dependencies (only available on Windows)" ${AUTO_DEPENDENCIES_DEFAULT})
-option(DOWNLOAD_GTEST "Download and compile GTest if not found" ${AUTO_DEPENDENCIES_DEFAULT})
+option(DOWNLOAD_GTEST "Download and compile GTest if not found" OFF)
 option(PREFER_BUNDLED_LIBS "Prefer bundled libraries over system libraries" ${AUTO_DEPENDENCIES_DEFAULT})
 option(DEV "Don't generate stuff necessary for packaging" OFF)
 
@@ -103,6 +103,8 @@ set(SERVER_EXECUTABLE fng2_srv CACHE STRING "Name of the built server executable
 ########################################################################
 
 find_package(PythonInterp)
+find_package(SQLite3)
+
 
 ########################################################################
 # Compiler flags
@@ -290,11 +292,10 @@ if(NOT CMAKE_CROSSCOMPILING)
   find_package(PkgConfig)
 endif()
 find_package(ZLIB)
-find_package(Crypto)
 find_package(Git)
 find_package(GTest)
 find_package(Threads)
-
+find_package(CURL)
 
 if(TARGET_OS AND TARGET_OS STREQUAL "mac")
   find_program(CMAKE_OTOOL otool)
@@ -342,9 +343,13 @@ endif()
 show_dependency_status("OpenSSL Crypto" CRYPTO)
 show_dependency_status("PythonInterp" PYTHONINTERP)
 show_dependency_status("Zlib" ZLIB)
-
+show_dependency_status("Curl" CURL)
 if(NOT(PYTHONINTERP_FOUND))
   message(SEND_ERROR "You must install Python to compile Teeworlds")
+endif()
+
+if(NOT(CURL_FOUND))
+  message(SEND_ERROR "You must install Curl to compile ${CMAKE_PROJECT_NAME}")
 endif()
 
 if(NOT(GTEST_FOUND))
@@ -434,14 +439,10 @@ endif()
 # DEPENDENCY COMPILATION
 ########################################################################
 
-set_src(DEP_JSON_SRC GLOB src/engine/external/json-parser json.c json.h)
-add_library(json EXCLUDE_FROM_ALL OBJECT ${DEP_JSON_SRC})
-
 set_src(DEP_MD5_SRC GLOB src/engine/external/md5 md5.c md5.h)
 add_library(md5 EXCLUDE_FROM_ALL OBJECT ${DEP_MD5_SRC})
 
-list(APPEND TARGETS_DEP json md5)
-set(DEP_JSON $<TARGET_OBJECTS:json>)
+list(APPEND TARGETS_DEP md5)
 set(DEP_MD5)
 if(NOT CRYPTO_FOUND)
   set(DEP_MD5 $<TARGET_OBJECTS:md5>)
@@ -452,32 +453,58 @@ endif()
 ########################################################################
 
 set(EXPECTED_DATA
+  maps/4TeamsFNG_random.map
+  maps/4TeamsFNG.map
   maps/AliveFNG.map
   maps/IIT_Edited.map
+  maps/openfng5Beat.map
+  mapres/desert_mountains.png
+  mapres/winter_doodads.png
+  mapres/moon.png
+  mapres/mountains.png
+  mapres/grass_main.png
+  mapres/jungle_doodads.png
+  mapres/stars.png
+  mapres/desert_main.png
+  mapres/winter_mountains3.png
+  mapres/winter_mountains.png
+  mapres/generic_unhookable.png
+  mapres/winter_main.png
+  mapres/jungle_deathtiles.png
+  mapres/jungle_background.png
+  mapres/bg_cloud3.png
+  mapres/desert_doodads.png
+  mapres/sun.png
+  mapres/jungle_main.png
+  mapres/bg_cloud2.png
+  mapres/winter_mountains2.png
+  mapres/jungle_midground.png
+  mapres/desert_mountains2.png
+  mapres/snow.png
+  mapres/jungle_unhookables.png
+  mapres/desert_sun.png
+  mapres/bg_cloud1.png
+  mapres/grass_doodads.png
+  mapres/generic_deathtiles.png
 )
 
-if(NOT EXISTS ${PROJECT_SOURCE_DIR}/datasrc/maps/AliveFNG.map)
-  message(WARNING "Missing datasrc/maps submodule. Please download a source release or update your git submodules with `git submodule update --init`")
-  foreach(item ${EXPECTED_DATA})
-    if(item MATCHES "^maps/")
-      list(REMOVE_ITEM EXPECTED_DATA ${item})
-    endif()
-  endforeach()
-endif()
-
-set_glob(DATA GLOB_RECURSE "json;map;png;rules;ttf;txt;wv" datasrc ${EXPECTED_DATA})
+set_glob(DATA GLOB_RECURSE "png;map" data ${EXPECTED_DATA})
 
 ########################################################################
-# COPY DATA
+# COPY DATA AND DLLS
 ########################################################################
 
 foreach(datafile ${DATA})
-  file(RELATIVE_PATH OUT ${PROJECT_SOURCE_DIR}/datasrc ${datafile})
-  get_filename_component(DESTINATION ${OUT} PATH)
+  file(RELATIVE_PATH OUT ${PROJECT_SOURCE_DIR}/data ${datafile})
+  get_filename_component(DESTINATION data/${OUT} PATH)
   file(MAKE_DIRECTORY ${DESTINATION})
   file(COPY ${datafile} DESTINATION ${DESTINATION})
 endforeach()
 
+set(COPY_FILES
+        ${CURL_COPY_FILES}
+)
+file(COPY ${COPY_FILES} DESTINATION .)
 ########################################################################
 # CODE GENERATION
 ########################################################################
@@ -504,7 +531,7 @@ function(generate_source output_file script_parameter)
   )
 endfunction()
 
-file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/generated/")
+file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/game/generated/")
 if(GIT_FOUND)
   execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --git-dir
     ERROR_QUIET
@@ -519,25 +546,16 @@ if(GIT_FOUND)
     )
   endif()
 endif()
-add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/src/generated/git_revision.cpp
-  COMMAND ${PYTHON_EXECUTABLE}
-    scripts/git_revision.py
-    > ${PROJECT_BINARY_DIR}/src/generated/git_revision.cpp
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-  DEPENDS
-    ${GIT_REVISION_EXTRA_DEPS}
-    scripts/git_revision.py
-)
-chash("src/generated/nethash.cpp"
+chash("src/game/generated/nethash.cpp"
   "src/engine/shared/protocol.h"
   "src/game/tuning.h"
   "src/game/gamecore.cpp"
-  "${PROJECT_BINARY_DIR}/src/generated/protocol.h"
+  "${PROJECT_BINARY_DIR}/src/game/generated/protocol.h"
 )
-generate_source("src/generated/protocol.cpp" "network_source")
-generate_source("src/generated/protocol.h" "network_header")
-generate_source("src/generated/server_data.cpp" "server_content_source")
-generate_source("src/generated/server_data.h" "server_content_header")
+generate_source("src/game/generated/protocol.cpp" "network_source")
+generate_source("src/game/generated/protocol.h" "network_header")
+generate_source("src/game/generated/server_data.cpp" "server_content_source")
+generate_source("src/game/generated/server_data.h" "server_content_header")
 
 
 ########################################################################
@@ -546,14 +564,7 @@ generate_source("src/generated/server_data.h" "server_content_header")
 
 # Sources
 set_src(BASE GLOB_RECURSE src/base
-  color.h
   detect.h
-  hash.c
-  hash.h
-  hash_bundled.c
-  hash_ctxt.h
-  hash_libtomcrypt.c
-  hash_openssl.c
   math.h
   system.c
   system.h
@@ -570,7 +581,6 @@ set_src(BASE GLOB_RECURSE src/base
 set_src(ENGINE_INTERFACE GLOB src/engine
   config.h
   console.h
-  contacts.h
   demo.h
   editor.h
   engine.h
@@ -627,7 +637,6 @@ set_src(ENGINE_SHARED GLOB src/engine/shared
   network_console.cpp
   network_console_conn.cpp
   network_server.cpp
-  network_token.cpp
   packer.cpp
   packer.h
   protocol.h
@@ -637,7 +646,7 @@ set_src(ENGINE_SHARED GLOB src/engine/shared
   snapshot.h
   storage.cpp
 )
-set(ENGINE_GENERATED_SHARED src/generated/nethash.cpp src/generated/protocol.cpp src/generated/protocol.h)
+set(ENGINE_GENERATED_SHARED src/game/generated/nethash.cpp src/game/generated/protocol.cpp src/game/generated/protocol.h)
 set_src(GAME_SHARED GLOB src/game
   collision.cpp
   collision.h
@@ -653,20 +662,20 @@ set_src(GAME_SHARED GLOB src/game
   voting.h
 )
 set(GAME_GENERATED_SHARED
-  src/generated/git_revision.cpp
-  src/generated/nethash.cpp
-  src/generated/protocol.h
+  src/game/generated/nethash.cpp
+  src/game/generated/protocol.h
 )
 
-set(DEPS ${DEP_JSON} ${DEP_MD5} ${ZLIB_DEP})
+set(DEPS ${DEP_MD5} ${ZLIB_DEP})
 
 # Libraries
-set(LIBS ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${CRYPTO_LIBRARIES} ${PLATFORM_LIBS})
+set(LIBS ${SQLite3_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${CRYPTO_LIBRARIES} ${PLATFORM_LIBS} ${CURL_LIBRARIES})
 
 # Targets
 add_library(engine-shared EXCLUDE_FROM_ALL OBJECT ${ENGINE_INTERFACE} ${ENGINE_SHARED} ${ENGINE_GENERATED_SHARED} ${BASE})
 add_library(game-shared EXCLUDE_FROM_ALL OBJECT ${GAME_SHARED} ${GAME_GENERATED_SHARED})
 list(APPEND TARGETS_OWN engine-shared game-shared)
+
 
 ########################################################################
 # SERVER
@@ -680,7 +689,6 @@ set_src(ENGINE_SERVER GLOB src/engine/server
   server.h
 )
 set_src(GAME_SERVER GLOB_RECURSE src/game/server
-  alloc.h
   entities/character.cpp
   entities/character.h
   entities/flag.cpp
@@ -698,6 +706,8 @@ set_src(GAME_SERVER GLOB_RECURSE src/game/server
   fng2define.h
   gamecontext.cpp
   gamecontext.h
+  database.cpp
+  database.h
   gamecontext_additional_gametypes.h
   gamecontext_additional_gametypes_includes.h
   gamecontroller.cpp
@@ -706,32 +716,33 @@ set_src(GAME_SERVER GLOB_RECURSE src/game/server
   gamemodes/fng2.h
   gamemodes/fng2boom.cpp
   gamemodes/fng2boom.h
-  #gamemodes/fng2_4teams.cpp
-  #gamemodes/fng2_4teams.h
+  gamemodes/fng2_4teams.cpp
+  gamemodes/fng2_4teams.h
   gamemodes/fng2boomsolo.cpp
   gamemodes/fng2boomsolo.h
   gamemodes/fng2solo.cpp
   gamemodes/fng2solo.h
   gameworld.cpp
   gameworld.h
-  laser_text.cpp
-  laser_text.h
+  laserText.cpp
+  laserText.h
   player.cpp
   player.h
 )
 set(GAME_GENERATED_SERVER
-  src/generated/server_data.cpp
-  src/generated/server_data.h
+  src/game/generated/server_data.cpp
+  src/game/generated/server_data.h
 )
 set(SERVER_SRC ${ENGINE_SERVER} ${GAME_SERVER} ${GAME_GENERATED_SERVER})
 if(TARGET_OS STREQUAL "windows")
-  set(SERVER_ICON "other/icons/${SERVER_EXECUTABLE}.rc")
+ # set(SERVER_ICON "other/icons/${SERVER_EXECUTABLE}.rc")
 else()
   set(SERVER_ICON)
 endif()
 
 # Libraries
 set(LIBS_SERVER ${LIBS})
+
 
 # Target
 set(TARGET_SERVER ${SERVER_EXECUTABLE})
@@ -742,6 +753,7 @@ add_executable(${TARGET_SERVER}
   $<TARGET_OBJECTS:engine-shared>
   $<TARGET_OBJECTS:game-shared>
 )
+target_link_libraries(${TARGET_SERVER} -lpqxx -lpq)
 target_link_libraries(${TARGET_SERVER} ${LIBS_SERVER})
 list(APPEND TARGETS_OWN ${TARGET_SERVER})
 list(APPEND TARGETS_LINK ${TARGET_SERVER})
@@ -761,7 +773,7 @@ endif()
 
 set_src(MASTERSRV_SRC GLOB src/mastersrv mastersrv.cpp mastersrv.h)
 set_src(VERSIONSRV_SRC GLOB src/versionsrv mapversions.h versionsrv.cpp versionsrv.h)
-list(APPEND VERSIONSRV_SRC ${PROJECT_BINARY_DIR}/src/generated/nethash.cpp)
+list(APPEND VERSIONSRV_SRC ${PROJECT_BINARY_DIR}/src/game/generated/nethash.cpp)
 
 set(TARGET_MASTERSRV mastersrv)
 set(TARGET_VERSIONSRV versionsrv)
@@ -776,42 +788,6 @@ list(APPEND TARGETS_OWN ${TARGET_MASTERSRV} ${TARGET_VERSIONSRV})
 list(APPEND TARGETS_LINK ${TARGET_MASTERSRV} ${TARGET_VERSIONSRV})
 
 add_custom_target(everything DEPENDS ${TARGETS_OWN})
-
-########################################################################
-# TESTS
-########################################################################
-
-if(GTEST_FOUND OR DOWNLOAD_GTEST)
-  set_src(TESTS GLOB src/test
-    fs.cpp
-    git_revision.cpp
-    hash.cpp
-    storage.cpp
-    str.cpp
-    test.cpp
-    test.h
-    thread.cpp
-  )
-  set(TARGET_TESTRUNNER testrunner)
-  add_executable(${TARGET_TESTRUNNER} EXCLUDE_FROM_ALL
-    ${TESTS}
-    $<TARGET_OBJECTS:engine-shared>
-    $<TARGET_OBJECTS:game-shared>
-    ${DEPS}
-  )
-  target_link_libraries(${TARGET_TESTRUNNER} ${LIBS} ${GTEST_LIBRARIES})
-  target_include_directories(${TARGET_TESTRUNNER} PRIVATE ${GTEST_INCLUDE_DIRS})
-
-  list(APPEND TARGETS_OWN ${TARGET_TESTRUNNER})
-  list(APPEND TARGETS_LINK ${TARGET_TESTRUNNER})
-
-  add_custom_target(run_tests
-    COMMAND $<TARGET_FILE:${TARGET_TESTRUNNER}> ${TESTRUNNER_ARGS}
-    COMMENT Running tests
-    DEPENDS ${TARGET_TESTRUNER}
-    USES_TERMINAL
-  )
-endif()
 
 ########################################################################
 # INSTALLATION
@@ -945,12 +921,15 @@ set(CPACK_TARGETS
 )
 set(CPACK_DIRS ${PROJECT_BINARY_DIR}/data)
 set(CPACK_FILES
+  fng.cfg
   license.txt
   storage.cfg
-  ${COPY_FILES}
 )
 if(TARGET_OS STREQUAL "windows")
   list(APPEND CPACK_FILES other/config_directory.bat)
+endif()
+if(UNIX)
+  list(APPEND CPACK_FILES start.sh)
 endif()
 
 if(NOT DEV)
@@ -1106,6 +1085,7 @@ foreach(target ${TARGETS_OWN})
     target_compile_options(${target} PRIVATE ${OUR_FLAGS_OWN})
   endif()
   target_include_directories(${target} PRIVATE ${PROJECT_BINARY_DIR}/src)
+  target_include_directories(${target} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS} ${SQLite3_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
   target_include_directories(${target} PRIVATE src)
   target_compile_definitions(${target} PRIVATE $<$<CONFIG:Debug>:CONF_DEBUG>)
   target_include_directories(${target} PRIVATE ${CURL_INCLUDE_DIRS})
@@ -1124,3 +1104,4 @@ foreach(target ${TARGETS_DEP})
     target_compile_options(${target} PRIVATE ${OUR_FLAGS_DEP})
   endif()
 endforeach()
+

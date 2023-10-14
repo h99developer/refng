@@ -3,22 +3,23 @@
 
 #include "entity.h"
 #include "gamecontext.h"
-#include "player.h"
 
-CEntity::CEntity(CGameWorld *pGameWorld, int ObjType, vec2 Pos, int ProximityRadius)
+//////////////////////////////////////////////////
+// Entity
+//////////////////////////////////////////////////
+CEntity::CEntity(CGameWorld *pGameWorld, int ObjType)
 {
 	m_pGameWorld = pGameWorld;
 
-	m_pPrevTypeEntity = 0;
-	m_pNextTypeEntity = 0;
-
-	m_ID = Server()->SnapNewID();
 	m_ObjType = ObjType;
-
-	m_ProximityRadius = ProximityRadius;
+	m_Pos = vec2(0,0);
+	m_ProximityRadius = 0;
 
 	m_MarkedForDestroy = false;
-	m_Pos = Pos;
+	m_ID = Server()->SnapNewID();
+
+	m_pPrevTypeEntity = 0;
+	m_pNextTypeEntity = 0;
 }
 
 CEntity::~CEntity()
@@ -50,8 +51,6 @@ int CEntity::NetworkClipped(int SnappingClient, vec2 CheckPos)
 
 bool CEntity::GameLayerClipped(vec2 CheckPos)
 {
-	int rx = round_to_int(CheckPos.x) / 32;
-	int ry = round_to_int(CheckPos.y) / 32;
-	return (rx < -200 || rx >= GameServer()->Collision()->GetWidth()+200)
-			|| (ry < -200 || ry >= GameServer()->Collision()->GetHeight()+200);
+	return round_to_int(CheckPos.x)/32 < -200 || round_to_int(CheckPos.x)/32 > GameServer()->Collision()->GetWidth()+200 ||
+			round_to_int(CheckPos.y)/32 < -200 || round_to_int(CheckPos.y)/32 > GameServer()->Collision()->GetHeight()+200 ? true : false;
 }

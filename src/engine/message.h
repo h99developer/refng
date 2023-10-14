@@ -8,10 +8,10 @@
 class CMsgPacker : public CPacker
 {
 public:
-	CMsgPacker(int Type, bool System=false)
+	CMsgPacker(int Type)
 	{
 		Reset();
-		AddInt((Type<<1)|(System?1:0));
+		AddInt(Type);
 	}
 };
 

@@ -31,7 +31,7 @@ void CRegister::RegisterNewState(int State)
 	m_RegisterStateStart = time_get();
 }
 
-void CRegister::RegisterSendFwcheckresponse(NETADDR *pAddr, TOKEN Token)
+void CRegister::RegisterSendFwcheckresponse(NETADDR *pAddr)
 {
 	CNetChunk Packet;
 	Packet.m_ClientID = -1;
@@ -39,7 +39,7 @@ void CRegister::RegisterSendFwcheckresponse(NETADDR *pAddr, TOKEN Token)
 	Packet.m_Flags = NETSENDFLAG_CONNLESS;
 	Packet.m_DataSize = sizeof(SERVERBROWSE_FWRESPONSE);
 	Packet.m_pData = SERVERBROWSE_FWRESPONSE;
-	m_pNetServer->Send(&Packet, Token);
+	m_pNetServer->Send(&Packet);
 }
 
 void CRegister::RegisterSendHeartbeat(NETADDR Addr)
@@ -235,7 +235,7 @@ void CRegister::RegisterUpdate(int Nettype)
 	}
 }
 
-int CRegister::RegisterProcessPacket(CNetChunk *pPacket, TOKEN Token)
+int CRegister::RegisterProcessPacket(CNetChunk *pPacket)
 {
 	// check for masterserver address
 	bool Valid = false;
@@ -257,16 +257,15 @@ int CRegister::RegisterProcessPacket(CNetChunk *pPacket, TOKEN Token)
 	if(pPacket->m_DataSize == sizeof(SERVERBROWSE_FWCHECK) &&
 		mem_comp(pPacket->m_pData, SERVERBROWSE_FWCHECK, sizeof(SERVERBROWSE_FWCHECK)) == 0)
 	{
-		RegisterSendFwcheckresponse(&pPacket->m_Address, Token);
+		RegisterSendFwcheckresponse(&pPacket->m_Address);
 		return 1;
 	}
 	else if(pPacket->m_DataSize == sizeof(SERVERBROWSE_FWOK) &&
 		mem_comp(pPacket->m_pData, SERVERBROWSE_FWOK, sizeof(SERVERBROWSE_FWOK)) == 0)
 	{
-		if(m_RegisterFirst && m_RegisterState != REGISTERSTATE_REGISTERED)
+		if(m_RegisterFirst)
 			m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "register", "no firewall/nat problems detected");
 		RegisterNewState(REGISTERSTATE_REGISTERED);
-		m_pNetServer->AddToken(&pPacket->m_Address, Token);
 		return 1;
 	}
 	else if(pPacket->m_DataSize == sizeof(SERVERBROWSE_FWERROR) &&
@@ -276,7 +275,7 @@ int CRegister::RegisterProcessPacket(CNetChunk *pPacket, TOKEN Token)
 		char aBuf[256];
 		str_format(aBuf, sizeof(aBuf), "ERROR: configure your firewall/nat to let through udp on port %d.", g_Config.m_SvPort);
 		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "register", aBuf);
-		RegisterNewState(REGISTERSTATE_ERROR);
+		//RegisterNewState(REGISTERSTATE_ERROR);
 		return 1;
 	}
 	else if(pPacket->m_DataSize == sizeof(SERVERBROWSE_COUNT)+2 &&

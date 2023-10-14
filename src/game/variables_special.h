@@ -5,14 +5,19 @@ MACRO_CONFIG_INT(SvMeltHammerScaleY, sv_melt_hammer_scale_y, 50, 1, 1000, CFGFLA
 
 MACRO_CONFIG_INT(SvScoreDisplay, sv_score_display, 0, 0, 1, CFGFLAG_SERVER, "0: Normal score display, 1: Calculates the deaths, etc. to the score points")
 
+MACRO_CONFIG_INT(SvStars, sv_stars, 0, 0, 1, CFGFLAG_SERVER, "Enable stars for admins")
 MACRO_CONFIG_INT(SvTeamScoreSpikeNormal, sv_team_score_normal, 5, 0, 100, CFGFLAG_SERVER, "Points a team receives for grabbing into normal spikes")
 MACRO_CONFIG_INT(SvTeamScoreSpikeTeam, sv_team_score_team, 10, 0, 100, CFGFLAG_SERVER, "Points a team receives for grabbing into team spikes")
 MACRO_CONFIG_INT(SvTeamScoreSpikeGold, sv_team_score_gold, 10, 0, 100, CFGFLAG_SERVER, "Points a team receives for grabbing into golden spikes")
+MACRO_CONFIG_INT(SvTeamScoreSpikeGreen, sv_team_score_green, 10, 0, 100, CFGFLAG_SERVER, "Points a team receives for grabbing into green spikes(non 4-teams fng only)")
+MACRO_CONFIG_INT(SvTeamScoreSpikePurple, sv_team_score_purple, 10, 0, 100, CFGFLAG_SERVER, "Points a team receives for grabbing into purple spikes(non 4-teams fng only)")
 MACRO_CONFIG_INT(SvTeamScoreSpikeFalse, sv_team_score_false, -2, -100, 0, CFGFLAG_SERVER, "Points a team receives for grabbing into opponents spikes")
 
 MACRO_CONFIG_INT(SvPlayerScoreSpikeNormal, sv_player_score_normal, 3, 0, 100, CFGFLAG_SERVER, "Points a player receives for grabbing into normal spikes")
 MACRO_CONFIG_INT(SvPlayerScoreSpikeTeam, sv_player_score_team, 5, 0, 100, CFGFLAG_SERVER, "Points a player receives for grabbing into team spikes")
 MACRO_CONFIG_INT(SvPlayerScoreSpikeGold, sv_player_score_gold, 7, 0, 100, CFGFLAG_SERVER, "Points a player receives for grabbing into golden spikes")
+MACRO_CONFIG_INT(SvPlayerScoreSpikeGreen, sv_player_score_green, 5, 0, 100, CFGFLAG_SERVER, "Points a player receives for grabbing into green spikes(non 4-teams fng only)")
+MACRO_CONFIG_INT(SvPlayerScoreSpikePurple, sv_player_score_purple, 6, 0, 100, CFGFLAG_SERVER, "Points a player receives for grabbing into purple spikes(non 4-teams fng only)")
 MACRO_CONFIG_INT(SvPlayerScoreSpikeFalse, sv_player_score_false, -5, -100, 0, CFGFLAG_SERVER, "Points a player receives for grabbing into opponents spikes")
 
 MACRO_CONFIG_INT(SvFalseSpikeFreeze, sv_false_spike_freeze, 5, 0, 60, CFGFLAG_SERVER, "The time, in seconds, a player gets frozen, if he grabbed a frozen opponent into the opponents spikes")
@@ -27,6 +32,14 @@ MACRO_CONFIG_INT(SvSmoothFreezeMode, sv_smooth_freeze_mode, 1, 0, 1, CFGFLAG_SER
 MACRO_CONFIG_INT(SvEmotionalTees, sv_emotional_tees, 0, 0, 1, CFGFLAG_SERVER, "Enable /emote chat command.")
 MACRO_CONFIG_INT(SvEmoteWheel, sv_emote_wheel, 0, 0, 1, CFGFLAG_SERVER, "Enable emote wheel like in ddrace with /emote chat command.")
 
+// database
+MACRO_CONFIG_STR(SvPsqlHost, sv_psql_host, 50, "None", CFGFLAG_SERVER, "PostgreSQL Host");
+MACRO_CONFIG_STR(SvPsqlPort, sv_psql_port, 50, "None", CFGFLAG_SERVER, "PostgreSQL Port");
+MACRO_CONFIG_STR(SvPsqlUser, sv_psql_user, 50, "None", CFGFLAG_SERVER, "PostgreSQL User");
+MACRO_CONFIG_STR(SvPsqlPassword, sv_psql_password, 50, "None", CFGFLAG_SERVER, "PostgreSQL Password");
+MACRO_CONFIG_STR(SvPsqlDatabase, sv_psql_db_name, 50, "None", CFGFLAG_SERVER, "PostgreSQL Database Name");
+
+
 //ddnet thingy
 MACRO_CONFIG_INT(SvMapWindow, sv_map_window, 10, 0, 100, CFGFLAG_SERVER, "Map downloading send-ahead window")
 // netlimit
@@ -39,5 +52,6 @@ MACRO_CONFIG_INT(SvKillTakeOverTime, sv_kill_take_over_time, 250, -1, 1250, CFGF
 
 MACRO_CONFIG_INT(SvGrenadeDamageToHit, sv_grenade_damage_to_hit, 4, 0, 6, CFGFLAG_SERVER, "The damage that needs to be dealed with the grenade to freeze the opponent. 0: all shots will kill, x: damage that must be dealed to freeze the opponent")
 
-
 MACRO_CONFIG_INT(SvTrivia, sv_trivia, 1, 0, 1, CFGFLAG_SERVER, "Send trivia at round end.")
+
+MACRO_CONFIG_INT(SvPerWeaponReload, sv_per_weapon_reload, 1, 0, 1, CFGFLAG_SERVER, "Reload every weapon individually(allows switching weapons).")

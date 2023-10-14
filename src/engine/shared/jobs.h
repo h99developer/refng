@@ -10,6 +10,7 @@ class CJob
 {
 	friend class CJobPool;
 
+	CJobPool *m_pPool;
 	CJob *m_pPrev;
 	CJob *m_pNext;
 
@@ -38,14 +39,6 @@ public:
 
 class CJobPool
 {
-	enum
-	{
-		MAX_THREADS=32
-	};
-	int m_NumThreads;
-	void *m_apThreads[MAX_THREADS];
-	volatile bool m_Shutdown;
-
 	LOCK m_Lock;
 	CJob *m_pFirstJob;
 	CJob *m_pLastJob;
@@ -54,7 +47,6 @@ class CJobPool
 
 public:
 	CJobPool();
-	~CJobPool();
 
 	int Init(int NumThreads);
 	int Add(CJob *pJob, JOBFUNC pfnFunc, void *pData);

@@ -37,7 +37,7 @@ int CEcon::DelClientCallback(int ClientID, const char *pReason, void *pUser, boo
 	return 0;
 }
 
-void CEcon::SendLineCB(const char *pLine, void *pUserData, bool Highlighted)
+void CEcon::SendLineCB(const char *pLine, void *pUserData)
 {
 	static_cast<CEcon *>(pUserData)->Send(-1, pLine);
 }

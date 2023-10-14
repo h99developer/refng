@@ -18,7 +18,7 @@ bool CTuningParams::Set(int Index, float Value)
 	return true;
 }
 
-bool CTuningParams::Get(int Index, float *pValue) const
+bool CTuningParams::Get(int Index, float *pValue)
 {
 	if(Index < 0 || Index >= Num())
 		return false;
@@ -34,7 +34,7 @@ bool CTuningParams::Set(const char *pName, float Value)
 	return false;
 }
 
-bool CTuningParams::Get(const char *pName, float *pValue) const
+bool CTuningParams::Get(const char *pName, float *pValue)
 {
 	for(int i = 0; i < Num(); i++)
 		if(str_comp_nocase(pName, m_apNames[i]) == 0)
@@ -72,8 +72,7 @@ void CCharacterCore::Reset()
 	m_HookedPlayer = -1;
 	m_Jumped = 0;
 	m_TriggeredEvents = 0;
-	m_Death = false;
-
+	
 	mem_zero(&m_CoreStats, sizeof(m_CoreStats));
 }
 
@@ -101,7 +100,18 @@ void CCharacterCore::Tick(bool UseInput)
 	if(UseInput)
 	{
 		m_Direction = m_Input.m_Direction;
-		m_Angle = (int)(angle(vec2(m_Input.m_TargetX, m_Input.m_TargetY))*256.0f);
+
+		// setup angle
+		float a = 0;
+		if(m_Input.m_TargetX == 0)
+			a = atanf((float)m_Input.m_TargetY);
+		else
+			a = atanf((float)m_Input.m_TargetY/(float)m_Input.m_TargetX);
+
+		if(m_Input.m_TargetX < 0)
+			a = a+pi;
+
+		m_Angle = (int)(a*256.0f);
 
 		// handle jump
 		if(m_Input.m_Jump)
@@ -110,14 +120,14 @@ void CCharacterCore::Tick(bool UseInput)
 			{
 				if(Grounded)
 				{
-					m_TriggeredEvents |= COREEVENTFLAG_GROUND_JUMP;
+					m_TriggeredEvents |= COREEVENT_GROUND_JUMP;
 					m_Vel.y = -m_pWorld->m_Tuning.m_GroundJumpImpulse;
 					m_Jumped |= 1;
 					++m_CoreStats.m_NumJumped;
 				}
 				else if(!(m_Jumped&2))
 				{
-					m_TriggeredEvents |= COREEVENTFLAG_AIR_JUMP;
+					m_TriggeredEvents |= COREEVENT_AIR_JUMP;
 					m_Vel.y = -m_pWorld->m_Tuning.m_AirJumpImpulse;
 					m_Jumped |= 3;
 					++m_CoreStats.m_NumJumped;
@@ -137,7 +147,7 @@ void CCharacterCore::Tick(bool UseInput)
 				m_HookDir = TargetDirection;
 				m_HookedPlayer = -1;
 				m_HookTick = 0;
-				//m_TriggeredEvents |= COREEVENTFLAG_HOOK_LAUNCH;
+				m_TriggeredEvents |= COREEVENT_HOOK_LAUNCH;
 				++m_CoreStats.m_NumHooks;
 			}
 		}
@@ -177,7 +187,8 @@ void CCharacterCore::Tick(bool UseInput)
 	else if(m_HookState == HOOK_RETRACT_END)
 	{
 		m_HookState = HOOK_RETRACTED;
-		//m_TriggeredEvents |= COREEVENTFLAG_HOOK_RETRACT;
+		m_TriggeredEvents |= COREEVENT_HOOK_RETRACT;
+		m_HookState = HOOK_RETRACTED;
 	}
 	else if(m_HookState == HOOK_FLYING)
 	{
@@ -215,7 +226,7 @@ void CCharacterCore::Tick(bool UseInput)
 				{
 					if (m_HookedPlayer == -1 || distance(m_HookPos, pCharCore->m_Pos) < Distance)
 					{
-						m_TriggeredEvents |= COREEVENTFLAG_HOOK_ATTACH_PLAYER;
+						m_TriggeredEvents |= COREEVENT_HOOK_ATTACH_PLAYER;
 						m_HookState = HOOK_GRABBED;
 						m_HookedPlayer = i;
 						Distance = distance(m_HookPos, pCharCore->m_Pos);
@@ -229,12 +240,12 @@ void CCharacterCore::Tick(bool UseInput)
 			// check against ground
 			if(GoingToHitGround)
 			{
-				m_TriggeredEvents |= COREEVENTFLAG_HOOK_ATTACH_GROUND;
+				m_TriggeredEvents |= COREEVENT_HOOK_ATTACH_GROUND;
 				m_HookState = HOOK_GRABBED;
 			}
 			else if(GoingToRetract)
 			{
-				m_TriggeredEvents |= COREEVENTFLAG_HOOK_HIT_NOHOOK;
+				m_TriggeredEvents |= COREEVENT_HOOK_HIT_NOHOOK;
 				m_HookState = HOOK_RETRACT_START;
 			}
 
@@ -295,6 +306,11 @@ void CCharacterCore::Tick(bool UseInput)
 			m_HookPos = m_Pos;
 		}
 	}
+}
+
+void CCharacterCore::TickDeferred()
+{
+	float PhysSize = 28.f;
 
 	if(m_pWorld)
 	{
@@ -323,16 +339,14 @@ void CCharacterCore::Tick(bool UseInput)
 
 				m_Vel += Dir*a*(Velocity*0.75f);
 				m_Vel *= 0.85f;
-
-				if(m_CoreStats.m_HadCollision[i] == 0)
-				{
+				
+				if(m_CoreStats.m_HadCollision[i] == 0) {
 					m_CoreStats.m_HadCollision[i] = 1;
 					++m_CoreStats.m_NumTeeCollisions;
 				}
 			}
 			//only set it to null here... should be rare that a tee bounces from another tee in the exact tick the other tee spawns and bounced from him when he died
-			else
-				m_CoreStats.m_HadCollision[i] = 0;
+			else m_CoreStats.m_HadCollision[i] = 0;
 
 			// handle hook influence
 			if(m_HookedPlayer == i && m_pWorld->m_Tuning.m_PlayerHooking)
@@ -361,25 +375,20 @@ void CCharacterCore::Tick(bool UseInput)
 
 void CCharacterCore::Move()
 {
-	if(!m_pWorld)
-		return;
-
-	float PhysSize = 28.0f;
 	float RampValue = VelocityRamp(length(m_Vel)*50, m_pWorld->m_Tuning.m_VelrampStart, m_pWorld->m_Tuning.m_VelrampRange, m_pWorld->m_Tuning.m_VelrampCurvature);
 
 	m_Vel.x = m_Vel.x*RampValue;
 
 	vec2 NewPos = m_Pos;
-	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(PhysSize, PhysSize), 0, &m_Death);
+	m_pCollision->MoveBox(&NewPos, &m_Vel, vec2(28.0f, 28.0f), 0);
 
-	if(m_CoreStats.m_MaxSpeed < absolute(m_Vel.x))
-	{
+	if(m_CoreStats.m_MaxSpeed < absolute(m_Vel.x)){
 		m_CoreStats.m_MaxSpeed = absolute(m_Vel.x);
 	}
-
+	
 	m_Vel.x = m_Vel.x*(1.0f/RampValue);
 
-	if(m_pWorld->m_Tuning.m_PlayerCollision)
+	if(m_pWorld && m_pWorld->m_Tuning.m_PlayerCollision)
 	{
 		// check player collision
 		float Distance = distance(m_Pos, NewPos);
@@ -395,15 +404,13 @@ void CCharacterCore::Move()
 				if(!pCharCore || pCharCore == this)
 					continue;
 				float D = distance(Pos, pCharCore->m_Pos);
-				if(D < PhysSize && D >= 0.0f)
+				if(D < 28.0f && D > 0.0f)
 				{
-					if(a > 0.0f)
-					{
+					if(a > 0.0f) {
 						m_CoreStats.m_NumTilesMoved += distance(m_Pos, LastPos);
 						m_Pos = LastPos;
 					}
-					else if(distance(NewPos, pCharCore->m_Pos) > D)
-					{
+					else if(distance(NewPos, pCharCore->m_Pos) > D) {
 						m_CoreStats.m_NumTilesMoved += distance(m_Pos, NewPos);
 						m_Pos = NewPos;
 					}

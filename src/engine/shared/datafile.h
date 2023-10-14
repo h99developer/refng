@@ -3,8 +3,6 @@
 #ifndef ENGINE_SHARED_DATAFILE_H
 #define ENGINE_SHARED_DATAFILE_H
 
-#include <base/hash.h>
-
 // raw datafile access
 class CDataFileReader
 {
@@ -19,23 +17,21 @@ public:
 	bool Open(class IStorage *pStorage, const char *pFilename, int StorageType);
 	bool Close();
 
+	static bool GetCrcSize(class IStorage *pStorage, const char *pFilename, int StorageType, unsigned *pCrc, unsigned *pSize);
+
 	void *GetData(int Index);
 	void *GetDataSwapped(int Index); // makes sure that the data is 32bit LE ints when saved
-	int GetDataSize(int Index) const;
-	void ReplaceData(int Index, char *pData);
+	int GetDataSize(int Index);
 	void UnloadData(int Index);
 	void *GetItem(int Index, int *pType, int *pID);
-	int GetItemSize(int Index) const;
+	int GetItemSize(int Index);
 	void GetType(int Type, int *pStart, int *pNum);
 	void *FindItem(int Type, int ID);
-	int NumItems() const;
-	int NumData() const;
+	int NumItems();
+	int NumData();
 	void Unload();
 
-	SHA256_DIGEST Sha256() const;
-	unsigned Crc() const;
-
-	static bool CheckSha256(IOHANDLE Handle, const void *pSha256);
+	unsigned Crc();
 };
 
 // write access

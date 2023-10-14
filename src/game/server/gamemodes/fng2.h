@@ -9,11 +9,16 @@ class CGameControllerFNG2 : public IGameController
 {
 public:
 	CGameControllerFNG2(class CGameContext* pGameServer);
+	CGameControllerFNG2(class CGameContext* pGameServer, CConfiguration& pConfig);
+	virtual void Tick();
+	virtual void Snap(int SnappingClient);
 	virtual void OnCharacterSpawn(class CCharacter *pChr);
 	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon);
-		
-	virtual void OnResetPlayer(int ClientID);
+	
+	virtual void DoWincheck();
+	
+	virtual void PostReset();
 protected:
-	virtual void EndMatch();
+	void EndRound();	
 };
 #endif

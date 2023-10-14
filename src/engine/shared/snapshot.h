@@ -9,18 +9,13 @@
 
 class CSnapshotItem
 {
-	friend class CSnapshotBuilder;
+public:
 	int m_TypeAndID;
 
 	int *Data() { return (int *)(this+1); }
-
-public:
-	const int *Data() const { return (int *)(this+1); }
-	int Type() const { return m_TypeAndID>>16; }
-	int ID() const { return m_TypeAndID&0xffff; }
-	int Key() const { return m_TypeAndID; }
-	void SetKey(int Type, int ID) { m_TypeAndID = (Type<<16)|(ID&0xffff); }
-	void Invalidate() { m_TypeAndID = -1; }
+	int Type() { return m_TypeAndID>>16; }
+	int ID() { return m_TypeAndID&0xffff; }
+	int Key() { return m_TypeAndID; }
 };
 
 
@@ -30,28 +25,23 @@ class CSnapshot
 	int m_DataSize;
 	int m_NumItems;
 
-	int *SortedKeys() const { return (int *)(this+1); }
-	int *Offsets() const { return (int *)(SortedKeys()+m_NumItems); }
+	int *Offsets() const { return (int *)(this+1); }
 	char *DataStart() const { return (char*)(Offsets()+m_NumItems); }
 
 public:
 	enum
 	{
-		MAX_PARTS	= 64,
-		MAX_SIZE	= MAX_PARTS*1024
+		MAX_SIZE=64*1024
 	};
 
 	void Clear() { m_DataSize = 0; m_NumItems = 0; }
 	int NumItems() const { return m_NumItems; }
-	const CSnapshotItem *GetItem(int Index) const;
-	int GetItemSize(int Index) const;
-	int GetItemIndex(int Key) const;
-	void InvalidateItem(int Index);
+	CSnapshotItem *GetItem(int Index);
+	int GetItemSize(int Index);
+	int GetItemIndex(int Key);
 
-	int Serialize(char *pDstData);
-
-	int Crc() const;
-	void DebugDump() const;
+	unsigned int Crc();
+	void DebugDump();
 };
 
 
@@ -77,16 +67,16 @@ private:
 	int m_SnapshotCurrent;
 	CData m_Empty;
 
-	void UndiffItem(const int *pPast, const int *pDiff, int *pOut, int Size);
+	void UndiffItem(int *pPast, int *pDiff, int *pOut, int Size);
 
 public:
 	CSnapshotDelta();
-	int GetDataRate(int Index) const { return m_aSnapshotDataRate[Index]; }
-	int GetDataUpdates(int Index) const { return m_aSnapshotDataUpdates[Index]; }
+	int GetDataRate(int Index) { return m_aSnapshotDataRate[Index]; }
+	int GetDataUpdates(int Index) { return m_aSnapshotDataUpdates[Index]; }
 	void SetStaticsize(int ItemType, int Size);
 	CData *EmptyDelta();
-	int CreateDelta(const class CSnapshot *pFrom, class CSnapshot *pTo, void *pData);
-	int UnpackDelta(const class CSnapshot *pFrom, class CSnapshot *pTo, const void *pData, int DataSize);
+	int CreateDelta(class CSnapshot *pFrom, class CSnapshot *pTo, void *pData);
+	int UnpackDelta(class CSnapshot *pFrom, class CSnapshot *pTo, void *pData, int DataSize);
 };
 
 
@@ -135,8 +125,6 @@ class CSnapshotBuilder
 
 public:
 	void Init();
-	void Init(const CSnapshot *pSnapshot);
-	bool UnserializeSnap(const char *pSrcData, int SrcSize);
 
 	void *NewItem(int Type, int ID, int Size);
 

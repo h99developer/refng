@@ -1,14 +1,13 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
-#include <generated/server_data.h>
+#include <game/generated/protocol.h>
 #include <game/server/gamecontext.h>
-
-#include "character.h"
 #include "laser.h"
 
 CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner)
-: CEntity(pGameWorld, CGameWorld::ENTTYPE_LASER, Pos)
+: CEntity(pGameWorld, CGameWorld::ENTTYPE_LASER)
 {
+	m_Pos = Pos;
 	m_Owner = Owner;
 	m_Energy = StartEnergy;
 	m_Dir = Direction;
@@ -23,14 +22,14 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 {
 	vec2 At;
 	CCharacter *pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
-	CCharacter *pHit = GameWorld()->IntersectCharacter(m_Pos, To, 0.f, At, pOwnerChar);
+	CCharacter *pHit = GameServer()->m_World.IntersectCharacter(m_Pos, To, 0.f, At, pOwnerChar);
 	if(!pHit)
 		return false;
 
 	m_From = From;
 	m_Pos = At;
 	m_Energy = -1;
-	pHit->TakeDamage(vec2(0.f, 0.f), normalize(To-From), g_pData->m_Weapons.m_aId[WEAPON_LASER].m_Damage, m_Owner, WEAPON_LASER);
+	pHit->TakeDamage(vec2(0.f, 0.f), GameServer()->Tuning()->m_LaserDamage, m_Owner, WEAPON_RIFLE);
 	return true;
 }
 
@@ -40,7 +39,7 @@ void CLaser::DoBounce()
 
 	if(m_Energy < 0)
 	{
-		GameWorld()->DestroyEntity(this);
+		GameServer()->m_World.DestroyEntity(this);
 		return;
 	}
 
@@ -67,7 +66,7 @@ void CLaser::DoBounce()
 			if(m_Bounces > GameServer()->Tuning()->m_LaserBounceNum)
 				m_Energy = -1;
 
-			GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE);
+			GameServer()->CreateSound(m_Pos, SOUND_RIFLE_BOUNCE);
 		}
 	}
 	else
@@ -83,12 +82,12 @@ void CLaser::DoBounce()
 
 void CLaser::Reset()
 {
-	GameWorld()->DestroyEntity(this);
+	GameServer()->m_World.DestroyEntity(this);
 }
 
 void CLaser::Tick()
 {
-	if((Server()->Tick() - m_EvalTick) > (Server()->TickSpeed() * GameServer()->Tuning()->m_LaserBounceDelay)/1000.0f)
+	if((double)(Server()->Tick() - m_EvalTick) > (Server()->TickSpeed()*(double)GameServer()->Tuning()->m_LaserBounceDelay)/1000.0)
 		DoBounce();
 }
 
@@ -99,10 +98,10 @@ void CLaser::TickPaused()
 
 void CLaser::Snap(int SnappingClient)
 {
-	if(NetworkClipped(SnappingClient) && NetworkClipped(SnappingClient, m_From))
+	if(NetworkClipped(SnappingClient))
 		return;
 
-	CNetObj_Laser *pObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, GetID(), sizeof(CNetObj_Laser)));
+	CNetObj_Laser *pObj = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, m_ID, sizeof(CNetObj_Laser)));
 	if(!pObj)
 		return;
 

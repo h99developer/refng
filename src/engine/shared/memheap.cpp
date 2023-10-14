@@ -3,6 +3,7 @@
 #include <base/system.h>
 #include "memheap.h"
 
+static const int CHUNK_SIZE = 1024*64;
 
 // allocates a new chunk to be used
 void CHeap::NewChunk()
@@ -21,8 +22,9 @@ void CHeap::NewChunk()
 	pChunk->m_pMemory = (char*)(pChunk+1);
 	pChunk->m_pCurrent = pChunk->m_pMemory;
 	pChunk->m_pEnd = pChunk->m_pMemory + CHUNK_SIZE;
-	pChunk->m_pNext = m_pCurrent;
+	pChunk->m_pNext = (CChunk *)0x0;
 
+	pChunk->m_pNext = m_pCurrent;
 	m_pCurrent = pChunk;
 }
 
@@ -31,13 +33,17 @@ void *CHeap::AllocateFromChunk(unsigned int Size)
 {
 	char *pMem;
 
+	unsigned Alignment = alignof(char*);
+	unsigned RequestSizeAlignOffset = Size % Alignment;
+	unsigned RequestSizePlusAlignment = Size + ((RequestSizeAlignOffset > 0) ? (Alignment - RequestSizeAlignOffset) : 0);
+
 	// check if we need can fit the allocation
-	if(m_pCurrent->m_pCurrent + Size > m_pCurrent->m_pEnd)
+	if(m_pCurrent->m_pCurrent + RequestSizePlusAlignment > m_pCurrent->m_pEnd)
 		return (void*)0x0;
 
 	// get memory and move the pointer forward
 	pMem = m_pCurrent->m_pCurrent;
-	m_pCurrent->m_pCurrent += Size;
+	m_pCurrent->m_pCurrent += RequestSizePlusAlignment;
 	return pMem;
 }
 

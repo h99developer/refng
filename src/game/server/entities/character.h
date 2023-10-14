@@ -3,11 +3,18 @@
 #ifndef GAME_SERVER_ENTITIES_CHARACTER_H
 #define GAME_SERVER_ENTITIES_CHARACTER_H
 
-#include <generated/protocol.h>
+#include <game/server/entity.h>
+#include <game/generated/server_data.h>
+#include <game/generated/protocol.h>
 
 #include <game/gamecore.h>
-#include <game/server/entity.h>
 
+enum
+{
+	WEAPON_GAME = -3, // team switching etc
+	WEAPON_SELF = -2, // console kill command
+	WEAPON_WORLD = -1, // death tiles etc
+};
 
 class CCharacter : public CEntity
 {
@@ -17,20 +24,15 @@ public:
 	//character's size
 	static const int ms_PhysSize = 28;
 
-	enum
-	{
-		MIN_KILLMESSAGE_CLIENTVERSION=0x0704,   // todo 0.8: remove me
-	};
-
 	CCharacter(CGameWorld *pWorld);
 
 	virtual void Reset();
 	virtual void Destroy();
+	virtual void PreTick();
 	virtual void Tick();
 	virtual void TickDefered();
 	virtual void TickPaused();
 	virtual void Snap(int SnappingClient);
-	virtual void PostSnap();
 
 	bool IsGrounded();
 
@@ -44,17 +46,17 @@ public:
 	void OnPredictedInput(CNetObj_PlayerInput *pNewInput);
 	void OnDirectInput(CNetObj_PlayerInput *pNewInput);
 	void ResetInput();
+
+	int GetActiveWeaponForReload();
 	void FireWeapon();
 
 	void Die(int Killer, int Weapon);
 
 	void DieSpikes(int pPlayerID, int spikes_flag);
-	bool IsFalseSpike(int Team, int spike_flag);
 
 	void Hit(int Killer, int Weapon);
+	bool TakeDamage(vec2 Force, int Dmg, int From, int Weapon);
 	void TakeHammerHit(CCharacter* pFrom);
-
-	bool TakeDamage(vec2 Force, vec2 Source, int Dmg, int From, int Weapon);
 
 	bool Spawn(class CPlayer *pPlayer, vec2 Pos);
 	bool Remove();
@@ -84,6 +86,8 @@ private:
 
 	bool m_Alive;
 
+	int m_LastHookedPlayer;
+
 	// weapon info
 	CEntity *m_apHitObjects[10];
 	int m_NumObjectsHit;
@@ -92,6 +96,7 @@ private:
 	{
 		int m_AmmoRegenStart;
 		int m_Ammo;
+		int m_Ammocost;
 		bool m_Got;
 
 	} m_aWeapons[NUM_WEAPONS];
@@ -103,7 +108,7 @@ private:
 	int m_LastWeapon;
 	int m_QueuedWeapon;
 
-	int m_ReloadTimer;
+	int m_ReloadTimer[NUM_WEAPONS];
 	int m_AttackTick;
 
 	int m_EmoteType;
@@ -118,14 +123,15 @@ private:
 	CNetObj_PlayerInput m_LatestInput;
 
 	// input
+	CNetObj_PlayerInput m_PrevInput;
 	CNetObj_PlayerInput m_Input;
 	int m_NumInputs;
 	int m_Jumped;
 
+	int m_DamageTakenTick;
+
 	int m_Health;
 	int m_Armor;
-
-	int m_TriggeredEvents;
 
 	// freeze
 	struct
@@ -134,7 +140,7 @@ private:
 		int m_Duration;
 	} m_Freeze;
 
-	// killer, that froze this character
+	// killer, that frozen this character
 	struct {
 		int m_KillerID;
 		unsigned int m_uiKillerHookTicks;
@@ -147,7 +153,9 @@ private:
 	int m_ReckoningTick; // tick that we are performing dead reckoning From
 	CCharacterCore m_SendCore; // core that we should send
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
-
+    // refng
+private:
+    void ReFNGTick();
 };
 
 #endif
